@@ -46462,101 +46462,17 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
       };
     })();
     var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@2.9.1",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 39,
-                "column": 12
-              },
-              "end": {
-                "line": 43,
-                "column": 12
-              }
-            },
-            "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
-          },
-          isEmpty: false,
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("              ");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createElement("td");
-            dom.setAttribute(el1, "style", "color:green;cursor:pointer");
-            var el2 = dom.createTextNode("\n                       OK\n                    ");
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes() {
-            return [];
-          },
-          statements: [],
-          locals: [],
-          templates: []
-        };
-      })();
-      var child1 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@2.9.1",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 43,
-                "column": 12
-              },
-              "end": {
-                "line": 47,
-                "column": 12
-              }
-            },
-            "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
-          },
-          isEmpty: false,
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("            ");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createElement("td");
-            dom.setAttribute(el1, "style", "color:red;cursor:pointer");
-            var el2 = dom.createTextNode("\n                       NOT OK\n                    ");
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes() {
-            return [];
-          },
-          statements: [],
-          locals: [],
-          templates: []
-        };
-      })();
       return {
         meta: {
           "revision": "Ember@2.9.1",
           "loc": {
             "source": null,
             "start": {
-              "line": 33,
+              "line": 32,
               "column": 10
             },
             "end": {
-              "line": 52,
+              "line": 41,
               "column": 10
             }
           },
@@ -46595,10 +46511,6 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
           var el3 = dom.createComment("");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n            ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("td");
@@ -46620,20 +46532,19 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
           var element0 = dom.childAt(fragment, [1]);
-          var morphs = new Array(8);
+          var morphs = new Array(7);
           morphs[0] = dom.createAttrMorph(element0, 'ids');
           morphs[1] = dom.createMorphAt(dom.childAt(element0, [1]), 0, 0);
           morphs[2] = dom.createMorphAt(dom.childAt(element0, [3]), 0, 0);
           morphs[3] = dom.createMorphAt(dom.childAt(element0, [5]), 0, 0);
           morphs[4] = dom.createMorphAt(dom.childAt(element0, [7]), 0, 0);
-          morphs[5] = dom.createMorphAt(element0, 9, 9);
+          morphs[5] = dom.createMorphAt(dom.childAt(element0, [9]), 0, 0);
           morphs[6] = dom.createMorphAt(dom.childAt(element0, [11]), 0, 0);
-          morphs[7] = dom.createMorphAt(dom.childAt(element0, [13]), 0, 0);
           return morphs;
         },
-        statements: [["attribute", "ids", ["get", "row.devices", ["loc", [null, [34, 20], [34, 31]]], 0, 0, 0, 0], 0, 0, 0, 0], ["content", "row.attributes.devices", ["loc", [null, [35, 16], [35, 42]]], 0, 0, 0, 0], ["content", "row.attributes.app_user", ["loc", [null, [36, 16], [36, 43]]], 0, 0, 0, 0], ["content", "row.attributes.device_user", ["loc", [null, [37, 16], [37, 46]]], 0, 0, 0, 0], ["content", "row.attributes.image", ["loc", [null, [38, 16], [38, 40]]], 0, 0, 0, 0], ["block", "if", [["get", "row.attributes.running_status", ["loc", [null, [39, 18], [39, 47]]], 0, 0, 0, 0]], [], 0, 1, ["loc", [null, [39, 12], [47, 19]]]], ["content", "row.attributes.status", ["loc", [null, [49, 16], [49, 41]]], 0, 0, 0, 0], ["content", "row.attributes.log", ["loc", [null, [50, 16], [50, 38]]], 0, 0, 0, 0]],
+        statements: [["attribute", "ids", ["get", "row.devices", ["loc", [null, [33, 20], [33, 31]]], 0, 0, 0, 0], 0, 0, 0, 0], ["content", "row.attributes.devices", ["loc", [null, [34, 16], [34, 42]]], 0, 0, 0, 0], ["content", "row.attributes.app_user", ["loc", [null, [35, 16], [35, 43]]], 0, 0, 0, 0], ["content", "row.attributes.device_user", ["loc", [null, [36, 16], [36, 46]]], 0, 0, 0, 0], ["content", "row.attributes.image", ["loc", [null, [37, 16], [37, 40]]], 0, 0, 0, 0], ["content", "row.attributes.status", ["loc", [null, [38, 16], [38, 41]]], 0, 0, 0, 0], ["content", "row.attributes.log", ["loc", [null, [39, 16], [39, 38]]], 0, 0, 0, 0]],
         locals: ["row"],
-        templates: [child0, child1]
+        templates: []
       };
     })();
     return {
@@ -46646,7 +46557,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
             "column": 0
           },
           "end": {
-            "line": 55,
+            "line": 44,
             "column": 6
           }
         },
@@ -46759,12 +46670,6 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("td");
-        var el6 = dom.createTextNode("Running status");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n                ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("td");
         var el6 = dom.createTextNode("Upgrade Result");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
@@ -46812,7 +46717,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         morphs[4] = dom.createMorphAt(dom.childAt(fragment, [2, 1, 3]), 1, 1);
         return morphs;
       },
-      statements: [["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [7, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [8, 20], [8, 28]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [8, 14], [10, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [11, 17], [11, 36]]], 0, 0], ["element", "action", ["csvdownld", ["get", "item", ["loc", [null, [16, 35], [16, 39]]], 0, 0, 0, 0]], [], ["loc", [null, [16, 14], [16, 41]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [33, 18], [33, 25]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [33, 10], [52, 19]]]]],
+      statements: [["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [7, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [8, 20], [8, 28]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [8, 14], [10, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [11, 17], [11, 36]]], 0, 0], ["element", "action", ["csvdownld", ["get", "item", ["loc", [null, [16, 35], [16, 39]]], 0, 0, 0, 0]], [], ["loc", [null, [16, 14], [16, 41]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [32, 18], [32, 25]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [32, 10], [41, 19]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -62490,7 +62395,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("netconfig/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_VIEW_LOOKUPS":true,"name":"netconfig","version":"0.0.0+5b3f82c6"});
+  require("netconfig/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_VIEW_LOOKUPS":true,"name":"netconfig","version":"0.0.0+361a7914"});
 }
 
 /* jshint ignore:end */
