@@ -46468,11 +46468,11 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
           "loc": {
             "source": null,
             "start": {
-              "line": 32,
+              "line": 33,
               "column": 10
             },
             "end": {
-              "line": 41,
+              "line": 43,
               "column": 10
             }
           },
@@ -46523,6 +46523,12 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
           var el3 = dom.createComment("");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n          ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
@@ -46532,7 +46538,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
           var element0 = dom.childAt(fragment, [1]);
-          var morphs = new Array(7);
+          var morphs = new Array(8);
           morphs[0] = dom.createAttrMorph(element0, 'ids');
           morphs[1] = dom.createMorphAt(dom.childAt(element0, [1]), 0, 0);
           morphs[2] = dom.createMorphAt(dom.childAt(element0, [3]), 0, 0);
@@ -46540,9 +46546,10 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
           morphs[4] = dom.createMorphAt(dom.childAt(element0, [7]), 0, 0);
           morphs[5] = dom.createMorphAt(dom.childAt(element0, [9]), 0, 0);
           morphs[6] = dom.createMorphAt(dom.childAt(element0, [11]), 0, 0);
+          morphs[7] = dom.createMorphAt(dom.childAt(element0, [13]), 0, 0);
           return morphs;
         },
-        statements: [["attribute", "ids", ["get", "row.devices", ["loc", [null, [33, 20], [33, 31]]], 0, 0, 0, 0], 0, 0, 0, 0], ["content", "row.attributes.devices", ["loc", [null, [34, 16], [34, 42]]], 0, 0, 0, 0], ["content", "row.attributes.app_user", ["loc", [null, [35, 16], [35, 43]]], 0, 0, 0, 0], ["content", "row.attributes.device_user", ["loc", [null, [36, 16], [36, 46]]], 0, 0, 0, 0], ["content", "row.attributes.image", ["loc", [null, [37, 16], [37, 40]]], 0, 0, 0, 0], ["content", "row.attributes.status", ["loc", [null, [38, 16], [38, 41]]], 0, 0, 0, 0], ["content", "row.attributes.log", ["loc", [null, [39, 16], [39, 38]]], 0, 0, 0, 0]],
+        statements: [["attribute", "ids", ["get", "row.devices", ["loc", [null, [34, 20], [34, 31]]], 0, 0, 0, 0], 0, 0, 0, 0], ["content", "row.attributes.devices", ["loc", [null, [35, 16], [35, 42]]], 0, 0, 0, 0], ["content", "row.attributes.app_user", ["loc", [null, [36, 16], [36, 43]]], 0, 0, 0, 0], ["content", "row.attributes.device_user", ["loc", [null, [37, 16], [37, 46]]], 0, 0, 0, 0], ["content", "row.attributes.image", ["loc", [null, [38, 16], [38, 40]]], 0, 0, 0, 0], ["content", "row.attributes.status", ["loc", [null, [39, 16], [39, 41]]], 0, 0, 0, 0], ["content", "row.attributes.log", ["loc", [null, [40, 16], [40, 38]]], 0, 0, 0, 0], ["inline", "timestampdate", [["get", "row.attributes.last_updated", ["loc", [null, [41, 32], [41, 59]]], 0, 0, 0, 0], "Asia/Kolkata"], [], ["loc", [null, [41, 16], [41, 76]]], 0, 0]],
         locals: ["row"],
         templates: []
       };
@@ -46557,7 +46564,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
             "column": 0
           },
           "end": {
-            "line": 44,
+            "line": 46,
             "column": 6
           }
         },
@@ -46577,7 +46584,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("li");
-        var el4 = dom.createTextNode("Update History");
+        var el4 = dom.createTextNode("Upgrade History");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n        ");
@@ -46619,7 +46626,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         var el2 = dom.createElement("button");
         dom.setAttribute(el2, "class", "addbtn");
         dom.setAttribute(el2, "style", "position:unset;");
-        var el3 = dom.createTextNode("Export history");
+        var el3 = dom.createTextNode("Export History");
         dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
         var el2 = dom.createTextNode("\n");
@@ -46670,13 +46677,19 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("td");
-        var el6 = dom.createTextNode("Upgrade Result");
+        var el6 = dom.createTextNode("Result");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("td");
         var el6 = dom.createTextNode("Remarks");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("Update time");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n            ");
@@ -46717,7 +46730,7 @@ define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function 
         morphs[4] = dom.createMorphAt(dom.childAt(fragment, [2, 1, 3]), 1, 1);
         return morphs;
       },
-      statements: [["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [7, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [8, 20], [8, 28]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [8, 14], [10, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [11, 17], [11, 36]]], 0, 0], ["element", "action", ["csvdownld", ["get", "item", ["loc", [null, [16, 35], [16, 39]]], 0, 0, 0, 0]], [], ["loc", [null, [16, 14], [16, 41]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [32, 18], [32, 25]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [32, 10], [41, 19]]]]],
+      statements: [["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [7, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [8, 20], [8, 28]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [8, 14], [10, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [11, 17], [11, 36]]], 0, 0], ["element", "action", ["csvdownld", ["get", "item", ["loc", [null, [16, 35], [16, 39]]], 0, 0, 0, 0]], [], ["loc", [null, [16, 14], [16, 41]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [33, 18], [33, 25]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [33, 10], [43, 19]]]]],
       locals: [],
       templates: [child0, child1]
     };
