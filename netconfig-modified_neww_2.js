@@ -3901,7 +3901,7 @@ define('netconfig/controllers/admin_login', ['exports', 'ember', 'netconfig/util
                 return false;
             },
             iamRedirect: function iamRedirect() {
-                window.location = "https://accounts.zoho.com/oauth/v2/auth?scope=email,AaaServer.profile.READ&client_id=1000.547NM2Z8LB95016FWPE4I6VZVANYZS&state=testing&response_type=code&redirect_uri=https://ab1-netops.zohonoc.com/oauth2callback&access_type=online";
+                window.location = "https://accounts.zoho.com/oauth/v2/auth?scope=email,AaaServer.profile.READ&client_id=1000.6ZPXU3HZIE5Z81C9AMDPC4BH28UWBK&state=testing&response_type=code&redirect_uri=https://in2-pop-netops.zohonoc.com/oauth2callback&access_type=online";
             }
         }
     });
@@ -11650,6 +11650,85 @@ define('netconfig/controllers/lanconf/osupdate/spine', ['exports', 'netconfig/ut
     }
   });
 });
+define('netconfig/controllers/lanconf/osupdate/updatelist', ['exports', 'ember', 'netconfig/utils/notify'], function (exports, _ember, _netconfigUtilsNotify) {
+  exports['default'] = _ember['default'].Controller.extend({
+    c_search: false,
+    pageMeta: { limit: 30, offset: 30 },
+
+    actions: {
+      csvdownld: function csvdownld() {
+        var self = this;
+
+        self.store.getBinary('csv_osupdates/').then(function (res) {
+
+          var link = document.createElement('a');
+          link.href = window.URL.createObjectURL(res);
+          link.download = 'OS_Upgrade_History.zip';
+          document.body.appendChild(link);
+          link.click();
+        }, function (err) {
+
+          (0, _netconfigUtilsNotify.customNotify)('error', "No Updates found!!");
+        });
+      },
+      fetchMore: function fetchMore(cb) {
+        var data = this.get('pageMeta');
+        var res = this.search(data);
+        cb(res);
+      },
+      search: function search() {
+        this.set("c_search", true);
+        this.search({ limit: 30, offset: 0 }, true);
+      },
+      c_search: function c_search() {
+        this.set("c_search", false);
+        $("#cmmt_s").val('');
+        this.search({ limit: 30, offset: 0 }, true);
+      }
+    },
+
+    search: function search(data, setcontent) {
+      console.log(data, setcontent);
+      var ip = $("#cmmt_s").val();
+      var self = this;
+      if (ip != '') {
+        console.log("inside if");
+        return this.store.getJSON("osupdatelist" + "?search=" + ip, data).then(function (res) {
+          if (setcontent) {
+            self.set('pageMeta.offset', 0);
+            self.set("content", res.data);
+          }
+          console.log(data.limit, data.offset);
+          // data.offset = (data.limit+data.offset)
+          self.set("pageMeta.offset", data.limit + data.offset);
+          self.set('hasMore', res.data.length ? true : false);
+          return res.data;
+        });
+      } else {
+        console.log("inside else");
+        this.set("c_search", false);
+        return this.store.getJSON("osupdatelist", data).then(function (res) {
+          if (setcontent) {
+            self.set('pageMeta.offset', 0);
+            self.set("content", res.data);
+          }
+          //data.offset = (data.limit+data.offset)
+          self.set("pageMeta.offset", data.limit + data.offset);
+          console.log("data.offset", data.offset);
+          self.set('hasMore', res.data.length ? true : false);
+          return res.data;
+        });
+      }
+    },
+
+    active: function active() {
+      var self = this;
+      _ember['default'].run.scheduleOnce('afterRender', function () {
+        $('.lan-sub .item.updatelist').addClass('active');
+      });
+    }
+  });
+});
 define('netconfig/controllers/lanconf/wanaccesslist/extended', ['exports', 'ember', 'netconfig/utils/notify', 'netconfig/utils/validation'], function (exports, _ember, _netconfigUtilsNotify, _netconfigUtilsValidation) {
   exports['default'] = _ember['default'].Controller.extend({
     protocols: null,
@@ -13984,7 +14063,7 @@ define('netconfig/controllers/login', ['exports', 'ember', 'netconfig/utils/vali
                 return false;
             },
             iamRedirect: function iamRedirect() {
-                window.location = "https://accounts.zoho.com/oauth/v2/auth?scope=email,AaaServer.profile.READ&client_id=1000.547NM2Z8LB95016FWPE4I6VZVANYZS&state=testing&response_type=code&redirect_uri=https://ab1-netops.zohonoc.com/oauth2callback&access_type=online";
+                window.location = "https://accounts.zoho.com/oauth/v2/auth?scope=email,AaaServer.profile.READ&client_id=1000.6ZPXU3HZIE5Z81C9AMDPC4BH28UWBK&state=testing&response_type=code&redirect_uri=https://in2-pop-netops.zohonoc.com/oauth2callback&access_type=online";
             }
         }
     });
@@ -14652,6 +14731,8 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
     is_input_empty: false,
     is_output_empty: false,
     is_forward_empty: false,
+    // ipv4: true,
+    // ipv6: false,
     prev: '',
     curr: '',
     all_empty: false,
@@ -14663,6 +14744,12 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
         _ember['default'].run.schedule("afterRender", function () {
           self.set("showCustomDiv", false);
           self.set("tog", false);
+          // self.set("ipv4",true)
+          if (self.get('ipv4')) {
+            $('input[name="cusToggipv4"]').prop('checked', true);
+          } else {
+            $('input[name="cusToggipv6"]').prop('checked', true);
+          }
 
           var temp_name = $('input[name="template_name"]');
           temp_name.prop('disabled', false);
@@ -14679,7 +14766,130 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
           });
         });
       },
+      customToggleipv4: function customToggleipv4() {
+        var self = this;
+        this.set("ipv4", true);
+        this.set("ipv6", false);
+        var data = { "instance_id": self.get('instanceid'), "ip_type": "ipv4" };
 
+        $('input[name="cusToggipv6"]').prop('checked', false);
+        $('input[name="cusToggipv4"]').prop('checked', true);
+
+        this.get('store').getJSON('instances/get_instance_iptables/', data).then(function (res) {
+
+          self.send('toggleIpVersion', res);
+        }, function (err) {
+          self.get('router').transitionTo('error.unauthorized');
+        });
+      },
+
+      customToggleipv6: function customToggleipv6() {
+        var self = this;
+        var data = { "instance_id": this.get('instanceid'), "ip_type": "ipv6" };
+        this.set("ipv4", false);
+        this.set("ipv6", true);
+
+        $('input[name="cusToggipv4"]').prop('checked', false);
+        $('input[name="cusToggipv6"]').prop('checked', true);
+
+        this.get('store').getJSON('instances/get_instance_iptables/', data).then(function (res) {
+
+          self.send('toggleIpVersion', res);
+        }, function (err) {
+          self.get('router').transitionTo('error.unauthorized');
+        });
+      },
+
+      toggleIpVersion: function toggleIpVersion(res) {
+
+        if (res['data']['data']['rules'] === null || res['data']['data']['rules'].length === 0) {
+          this.set('instanceipcontent', []);
+        } else {
+          this.set('instanceipcontent', res['data']['data']['rules']);
+        }
+
+        console.log("FORM DATA");
+        console.log(res['data']['data']);
+
+        if (res['data']['data']['rules'] == null) {
+          this.set('nullcontent', true);
+        } else {
+          this.set('nullcontent', false);
+        }
+
+        this.set('nullinput', false);
+        this.set('nulloutput', false);
+        this.set('nullforward', false);
+
+        if (this.get('nullcontent') == false) {
+          var alllst = res['data']['data']['rules'][0];
+          //console.log(alllst)
+
+          for (var rulelst in alllst) {
+            var ruleitem = alllst[rulelst][0]['rule_list'];
+            // console.log(rulelst)
+            //console.log(ruleitem)
+            if (ruleitem.length > 0) {
+              continue;
+            }
+            if (rulelst === "input_list") {
+              this.set('nullinput', true);
+            } else if (rulelst === "output_list") {
+              this.set('nulloutput', true);
+            } else {
+              this.set('nullforward', true);
+            }
+          }
+
+          var form_org = res['data']['data']['rules'];
+
+          for (var ruleslst in form_org[0]) {
+
+            var properties = Object.keys(form_org[0][ruleslst][0]);
+
+            if (properties.indexOf('default_policy') < properties.indexOf('rule_list')) {
+              continue;
+            }
+
+            // console.log(form_org[0][ruleslst][0])
+            if (ruleslst === "input_list") {
+              if (this.get('nullinput')) {
+                continue;
+              }
+            } else if (ruleslst === "output_list") {
+              if (this.get('nulloutput')) {
+                continue;
+              }
+            } else {
+              if (this.get('nullforward')) {
+                continue;
+              }
+            }
+            var defaultPolicy = form_org[0][ruleslst][0].default_policy;
+            var ruleList = form_org[0][ruleslst][0].rule_list;
+
+            delete form_org[0][ruleslst][0].default_policy;
+            delete form_org[0][ruleslst][0].rule_list;
+
+            form_org[0][ruleslst][0].default_policy = defaultPolicy;
+            form_org[0][ruleslst][0].rule_list = ruleList;
+          }
+        }
+
+        // this.set('instanceid',model['param']['instanceid')
+        // this.set('serviceid',model['param']['serviceid'])
+        this.set('form_data', res['data']['data']['rules']);
+        this.set('form_default', res['data']['data']['formDetails']['form_default']);
+        this.set('metaKeys', res['data']['data']['formDetails']["metaKeys"]);
+
+        // var serviceid = this.get('serviceid')
+        // Ember.run.schedule('afterRender', function() {
+        //   $('.'+serviceid).find('a').addClass('active');
+        // })
+
+        this.send("test");
+        // this.send("onLoad");
+      },
       test: function test() {
         var self = this;
         var data = "";
@@ -14842,9 +15052,6 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
                 obj += name !== undefined ? '<h3 class="group-title" >' + label_disp_arr + add_btn + '</h3><div class="formgroup">' + del_btn + self.actions.parseObj.call(self, e, i) + '</div>' : '';
               }
             } else {
-              console.log("Else part");
-              console.log(i);
-              console.log(e);
               obj += self.actions.parseObj.call(self, e, i);
             }
           });
@@ -14857,9 +15064,6 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
       createForm: function createForm(res) {
         var self = this;
         var data = self.actions.parseArr.call(self, res);
-
-        console.log("Created data");
-        console.log(data);
 
         $('.form-container').html(data);
 
@@ -15174,14 +15378,15 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
           Object.assign(fullObj, rowObject, subRowObject);
         });
 
+        var iptype = self.get('ipv4');
         // if(!validateForm.validateRuleList('Input_list')){ return false; }
-        if (!_netconfigUtilsValidation.validateForm.validateRuleList('input_list')) {
+        if (!_netconfigUtilsValidation.validateForm.validateRuleList('input_list', iptype)) {
           return false;
         }
-        if (!_netconfigUtilsValidation.validateForm.validateRuleList('output_list')) {
+        if (!_netconfigUtilsValidation.validateForm.validateRuleList('output_list', iptype)) {
           return false;
         }
-        if (!_netconfigUtilsValidation.validateForm.validateRuleList('forward_list')) {
+        if (!_netconfigUtilsValidation.validateForm.validateRuleList('forward_list', iptype)) {
           return false;
         }
 
@@ -15299,8 +15504,12 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
         if (flag) {
 
           //self.store.post('instances/push_rules/',{commands:JSON.stringify(finalArr)}).then(function(res)
+          var ip_type = "ipv4";
+          if (self.get('ipv6')) {
+            ip_type = "ipv6";
+          }
 
-          var data = "&rules=" + JSON.stringify(finalArr) + "&instance_id=" + self.get('instanceid') + "&updated_time=" + new Date().getTime();
+          var data = "&rules=" + JSON.stringify(finalArr) + "&instance_id=" + self.get('instanceid') + "&updated_time=" + new Date().getTime() + "&ip_type=" + ip_type;
           var append = "&isIptableEdit=1" + "&config_push=0";
           // alert("hello")
           // console.log(finalArr)
@@ -15321,7 +15530,6 @@ define('netconfig/controllers/myservices/iptables/index', ['exports', 'ember', '
                 (0, _netconfigUtilsNotify.customNotify)('success', Inres['data']['msg']);
                 self.get('router').transitionTo('myservices.index', self.get('serviceid'));
               }, function (err) {
-                console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^6");
                 // console.log(err.errors.msg)
                 self.set('isSaving', false);
                 if (err["errors"]["msg"] != undefined) {
@@ -15472,13 +15680,28 @@ define("netconfig/controllers/settings/admin/index", ["exports", "ember"], funct
         }
     });
 });
-define("netconfig/controllers/settings/commits", ["exports", "ember", "netconfig/utils/validation"], function (exports, _ember, _netconfigUtilsValidation) {
+define("netconfig/controllers/settings/commits", ["exports", "ember", "netconfig/utils/notify"], function (exports, _ember, _netconfigUtilsNotify) {
   exports["default"] = _ember["default"].Controller.extend({
     c_search: false,
     hasMore: true,
     pageMeta: { limit: 30, offset: 30 },
     commitURL: "commits/",
     actions: {
+      csvdownld: function csvdownld() {
+        var self = this;
+
+        self.store.getBinary('csv_reports/', { "commitURL": this.get("commitURL") }).then(function (res) {
+
+          var link = document.createElement('a');
+          link.href = window.URL.createObjectURL(res);
+          link.download = 'CommitLog.zip';
+          document.body.appendChild(link);
+          link.click();
+        }, function (err) {
+
+          (0, _netconfigUtilsNotify.customNotify)('error', "No Logs found!!");
+        });
+      },
       fetchMore: function fetchMore(cb) {
         var data = this.get('pageMeta');
         var res = this.search(data);
@@ -16067,12 +16290,47 @@ define("netconfig/controllers/testflow/pipeline", ["exports", "ember"], function
 define('netconfig/controllers/testflow/workflow', ['exports', 'ember', 'netconfig/utils/validation', 'netconfig/utils/notify'], function (exports, _ember, _netconfigUtilsValidation, _netconfigUtilsNotify) {
     exports['default'] = _ember['default'].Controller.extend({
         routerData: {},
+        parseData: [],
+        configdetail: "",
+        hostip: "",
         isLoading: false,
         approver_comment: "",
         hasMore: true,
         isAdmin: false,
         pageMeta: { offset: 100, limit: 100, from: '', to: '', status: 'all' },
         actions: {
+            getConfig: function getConfig(itm) {
+                var self = this;
+                // const pattern = /\[(.*?)\]/;
+                // const host = pattern.exec(itm)[1];
+                self.set("hostip", itm);
+
+                self.store.getJSON("aconfig/" + itm + "/").then(function (res) {
+
+                    self.set("configdetail", res.data);
+                    $(".shdr").css("z-index", 0);
+                    // $(".gAction .podSelect").css("z-index", 0)
+                    $(".overlay2").css("visibility", "visible");
+                    $(".overlay2").css("opacity", 1);
+                    $(".overlay2").css("left", "0");
+                    $(".overlay2").css("right", "auto");
+                    //self.set("configdetail", res.data)
+                }, function (err) {
+                    (0, _netconfigUtilsNotify.customNotify)('error', "Could not fetch data.");
+                });
+            },
+            refresh: function refresh(host) {
+                var self = this;
+                this.store.getJSON("aconfig/" + host + "/").then(function (res) {
+                    self.set("confText", res.data);
+                });
+            },
+            closePopup: function closePopup() {
+                $(".overlay2").css("visibility", "hidden");
+                $(".overlay2").css("opacity", 0);
+                $(".shdr").css("z-index", 1);
+                // $(".gAction .podSelect").css("z-index", 1)
+            },
             showComments: function showComments(itm) {
                 var ele = $('.table tbody tr[ids="' + itm.request_id + '"]').find('.wf-comment');
                 this.set('approver_comment', itm.approver_comment === null ? 'No data available' : itm.approver_comment);
@@ -16173,7 +16431,7 @@ define('netconfig/controllers/testflow/workflow', ['exports', 'ember', 'netconfi
             login: function login() {
                 if (!_netconfigUtilsValidation.validateForm.validate($('form[name="loginform"]'))) {
                     return false;
-                } //No I18N           
+                } //No I18N
                 var self = this;
                 this.set('isLoading', true);
                 this.store.post('executeconfig/', $('form[name="loginform"]').serialize()).then(function (res) {
@@ -16227,6 +16485,14 @@ define('netconfig/controllers/testflow/workflow', ['exports', 'ember', 'netconfi
                 }
 
                 this.set('routerData', itm);
+                var ipdata = this.get('routerData').routers;
+                var lst = [];
+                var regex = /([\s\S]*?)\s*\[(.*?)\]/;
+                for (var i = 0; i < ipdata.length; i++) {
+                    var match = ipdata[i].match(regex);
+                    lst.push({ "host": match[2], "hostname": match[1] });
+                }
+                this.set('parseData', lst);
                 var ele = $('.table tbody tr[ids="' + itm.request_id + '"]').find('.wf-routerdetail');
                 // left:(ele.offset().left - $('.workflow-rd').width())
                 $('.workflow-rd').css({ top: ele.offset().top + $('.innerContainer').scrollTop() - 20 });
@@ -16238,12 +16504,47 @@ define('netconfig/controllers/testflow/workflow', ['exports', 'ember', 'netconfi
 define('netconfig/controllers/workflow', ['exports', 'ember', 'netconfig/utils/validation', 'netconfig/utils/notify'], function (exports, _ember, _netconfigUtilsValidation, _netconfigUtilsNotify) {
     exports['default'] = _ember['default'].Controller.extend({
         routerData: {},
+        parseData: [],
+        configdetail: "",
+        hostip: "",
         isLoading: false,
         approver_comment: "",
         hasMore: true,
         isAdmin: false,
         pageMeta: { offset: 100, limit: 100, from: '', to: '', status: 'all' },
         actions: {
+            getConfig: function getConfig(itm) {
+                var self = this;
+                // const pattern = /\[(.*?)\]/;
+                // const host = pattern.exec(itm)[1];
+                self.set("hostip", itm);
+
+                self.store.getJSON("aconfig/" + itm + "/").then(function (res) {
+
+                    self.set("configdetail", res.data);
+                    $(".shdr").css("z-index", 0);
+                    // $(".gAction .podSelect").css("z-index", 0)
+                    $(".overlay2").css("visibility", "visible");
+                    $(".overlay2").css("opacity", 1);
+                    $(".overlay2").css("left", "0");
+                    $(".overlay2").css("right", "auto");
+                    //self.set("configdetail", res.data)
+                }, function (err) {
+                    (0, _netconfigUtilsNotify.customNotify)('error', "Could not fetch data.");
+                });
+            },
+            refresh: function refresh(host) {
+                var self = this;
+                this.store.getJSON("aconfig/" + host + "/").then(function (res) {
+                    self.set("confText", res.data);
+                });
+            },
+            closePopup: function closePopup() {
+                $(".overlay2").css("visibility", "hidden");
+                $(".overlay2").css("opacity", 0);
+                $(".shdr").css("z-index", 1);
+                // $(".gAction .podSelect").css("z-index", 1)
+            },
             showComments: function showComments(itm) {
                 var ele = $('.table tbody tr[ids="' + itm.request_id + '"]').find('.wf-comment');
                 this.set('approver_comment', itm.approver_comment === null ? 'No data available' : itm.approver_comment);
@@ -16344,7 +16645,7 @@ define('netconfig/controllers/workflow', ['exports', 'ember', 'netconfig/utils/v
             login: function login() {
                 if (!_netconfigUtilsValidation.validateForm.validate($('form[name="loginform"]'))) {
                     return false;
-                } //No I18N           
+                } //No I18N
                 var self = this;
                 this.set('isLoading', true);
                 this.store.post('executeconfig/', $('form[name="loginform"]').serialize()).then(function (res) {
@@ -16398,6 +16699,14 @@ define('netconfig/controllers/workflow', ['exports', 'ember', 'netconfig/utils/v
                 }
 
                 this.set('routerData', itm);
+                var ipdata = this.get('routerData').routers;
+                var lst = [];
+                var regex = /([\s\S]*?)\s*\[(.*?)\]/;
+                for (var i = 0; i < ipdata.length; i++) {
+                    var match = ipdata[i].match(regex);
+                    lst.push({ "host": match[2], "hostname": match[1] });
+                }
+                this.set('parseData', lst);
                 var ele = $('.table tbody tr[ids="' + itm.request_id + '"]').find('.wf-routerdetail');
                 // left:(ele.offset().left - $('.workflow-rd').width())
                 $('.workflow-rd').css({ top: ele.offset().top + $('.innerContainer').scrollTop() - 20 });
@@ -17565,6 +17874,7 @@ define('netconfig/router', ['exports', 'ember', 'netconfig/config/environment'],
       this.route("osupdate", function () {
         this.route("mlag");
         this.route("spine");
+        this.route('updatelist');
       });
       this.route("lanconf/wanaccesslist", { resetNamespace: true, path: '/wanaccesslist' }, function () {
         this.route('standard');
@@ -18750,6 +19060,40 @@ define('netconfig/routes/lanconf/osupdate/spine', ['exports', 'netconfig/utils/n
     }
   });
 });
+define('netconfig/routes/lanconf/osupdate/updatelist', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({
+
+    beforeModel: function beforeModel(param1, param2) {
+      this.controllerFor('lanconf').set('sub', true);
+    },
+
+    model: function model() {
+      return this.store.getJSON('osupdatelist/', { limit: 30, offset: 0 }).then(function (res) {
+        return res;
+      }, function (err) {
+        console.log(err);
+      });
+    },
+
+    setupController: function setupController(controller, model) {
+      console.log("model@@@@@@@");
+      console.log(model);
+      controller.set("content", model.data);
+      controller.active();
+    },
+
+    actions: {
+      willTransition: function willTransition(transition) {
+        var pageMeta = this.controller.get('pageMeta');
+        pageMeta.limit = 30;
+        pageMeta.offset = 30;
+
+        this.controllerFor('lanconf').set('sub', false);
+        $('.lan-sub .item.updatelist').removeClass('active');
+      }
+    }
+  });
+});
 define('netconfig/routes/lanconf/wanaccesslist/extended', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = _ember['default'].Route.extend({
     model: function model() {
@@ -19061,7 +19405,6 @@ define('netconfig/routes/monitoring/inventory', ['exports', 'ember', 'netconfig/
   exports['default'] = _ember['default'].Route.extend({
     model: function model() {
       var self = this;
-
       return this.store.getJSON("../get_user/").then(function (resUser) {
 
         if (resUser.is_staff) {
@@ -19350,8 +19693,8 @@ define('netconfig/routes/myservices/instance-notfound', ['exports', 'ember'], fu
 
     });
 });
-define("netconfig/routes/myservices/iptables/index", ["exports", "ember"], function (exports, _ember) {
-  exports["default"] = _ember["default"].Route.extend({
+define('netconfig/routes/myservices/iptables/index', ['exports', 'ember', 'netconfig/utils/notify'], function (exports, _ember, _netconfigUtilsNotify) {
+  exports['default'] = _ember['default'].Route.extend({
 
     queryParams: {
       test: {}
@@ -19369,7 +19712,7 @@ define("netconfig/routes/myservices/iptables/index", ["exports", "ember"], funct
 
           self.transitionTo('myservices.iptables.instanceiptables-notfound', param.serviceid, param.instanceid);
         } else {
-          return _ember["default"].RSVP.hash({
+          return _ember['default'].RSVP.hash({
             "res": res,
             "param": param
           });
@@ -19398,6 +19741,14 @@ define("netconfig/routes/myservices/iptables/index", ["exports", "ember"], funct
       controller.set('nullinput', false);
       controller.set('nulloutput', false);
       controller.set('nullforward', false);
+
+      controller.set('ipv4', true);
+      controller.set('ipv6', false);
+
+      if (!model['res']['data']['data']['ipv4_type']) {
+        controller.set('ipv4', false);
+        controller.set('ipv6', true);
+      }
 
       if (controller.get('nullcontent') == false) {
         var alllst = model['res']['data']['data']['rules'][0];
@@ -19461,7 +19812,7 @@ define("netconfig/routes/myservices/iptables/index", ["exports", "ember"], funct
       controller.set('metaKeys', model['res']['data']['data']['formDetails']["metaKeys"]);
 
       var serviceid = controller.get('serviceid');
-      _ember["default"].run.schedule('afterRender', function () {
+      _ember['default'].run.schedule('afterRender', function () {
         $('.' + serviceid).find('a').addClass('active');
       });
 
@@ -19716,10 +20067,12 @@ define('netconfig/routes/settings/routers/index', ['exports', 'ember', 'netconfi
             }));
             controller.set('allcontent', model['data']);
             model["data"].forEach(function (key, index) {
-                var startTime = new Date(key["bgp_dc_status_set"][0]["updated"]);
-                startTime = Date.parse(startTime);
-                var h = new Date(startTime).toLocaleString('en-US', { timeZone: 'IST' });
-                key["bgp_dc_status_set"][0]["updated"] = h;
+                if (key["bgp_dc_status_set"].length !== 0) {
+                    var startTime = new Date(key["bgp_dc_status_set"][0]["updated"]);
+                    startTime = Date.parse(startTime);
+                    var h = new Date(startTime).toLocaleString('en-US', { timeZone: 'IST' });
+                    key["bgp_dc_status_set"][0]["updated"] = h;
+                }
             });
             controller.set('content', model['data']);
             controller.pollingStatus();
@@ -19849,7 +20202,7 @@ define('netconfig/routes/testflow/workflow', ['exports', 'ember'], function (exp
             willTransition: function willTransition() {
                 var ctrl = this.get('controller');
                 ctrl.set('pageMeta', { offset: 100, limit: 100, from: '', to: '', status: 'all' });
-                ctrl.setProperties({ hasMore: true, approver_comment: "", isLoading: false, routerData: {} });
+                ctrl.setProperties({ hasMore: true, approver_comment: "", isLoading: false, routerData: {}, parseData: [] });
             }
         }
     });
@@ -19877,7 +20230,7 @@ define('netconfig/routes/workflow', ['exports', 'ember'], function (exports, _em
             willTransition: function willTransition() {
                 var ctrl = this.get('controller');
                 ctrl.set('pageMeta', { offset: 100, limit: 100, from: '', to: '', status: 'all' });
-                ctrl.setProperties({ hasMore: true, approver_comment: "", isLoading: false, routerData: {} });
+                ctrl.setProperties({ hasMore: true, approver_comment: "", isLoading: false, routerData: {}, parseData: [] });
             }
         }
     });
@@ -20138,6 +20491,18 @@ define('netconfig/services/store', ['exports', 'ember', 'netconfig/adapters/appl
       };
       return this.adapter.ajax(url, params);
     },
+    getBinary: function getBinary(url, data) {
+
+      var params = {
+        type: 'GET', //No I18N
+        data: data,
+        xhrFields: {
+          responseType: 'blob'
+        }
+      };
+      return this.adapter.ajax(url, params);
+    },
+
     ajax: function ajax(url, params) {
       return this.adapter.ajax(url, params);
     }
@@ -45295,7 +45660,7 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
                 "column": 8
               },
               "end": {
-                "line": 17,
+                "line": 19,
                 "column": 8
               }
             },
@@ -45335,7 +45700,19 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             dom.appendChild(el3, el4);
             dom.appendChild(el2, el3);
             dom.appendChild(el1, el2);
-            var el2 = dom.createTextNode("\n          ");
+            var el2 = dom.createTextNode("\n            ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "item updatelist");
+            var el3 = dom.createTextNode(" ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("a");
+            dom.setAttribute(el3, "href", "#/lanconf/osupdate/updatelist/");
+            var el4 = dom.createTextNode("OS Upgrade History");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n\n          ");
             dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode("\n");
@@ -45357,11 +45734,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 18,
+                "line": 20,
                 "column": 25
               },
               "end": {
-                "line": 18,
+                "line": 20,
                 "column": 57
               }
             },
@@ -45395,7 +45772,7 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
               "column": 4
             },
             "end": {
-              "line": 20,
+              "line": 22,
               "column": 4
             }
           },
@@ -45476,7 +45853,7 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
           morphs[6] = dom.createMorphAt(dom.childAt(element1, [13]), 0, 0);
           return morphs;
         },
-        statements: [["block", "link-to", ["lanconf/accesslist"], [], 0, null, ["loc", [null, [7, 25], [7, 81]]]], ["block", "link-to", ["lanconf.interfaces"], [], 1, null, ["loc", [null, [8, 25], [8, 80]]]], ["block", "link-to", ["lanconf.configuser"], [], 2, null, ["loc", [null, [9, 25], [9, 87]]]], ["block", "link-to", ["lanconf.command"], [], 3, null, ["loc", [null, [10, 25], [10, 74]]]], ["block", "link-to", ["lanconf.osupdate"], [], 4, null, ["loc", [null, [11, 25], [11, 76]]]], ["block", "if", [["get", "sub", ["loc", [null, [12, 14], [12, 17]]], 0, 0, 0, 0]], [], 5, null, ["loc", [null, [12, 8], [17, 15]]]], ["block", "link-to", ["lanconf.cicd"], [], 6, null, ["loc", [null, [18, 25], [18, 69]]]]],
+        statements: [["block", "link-to", ["lanconf/accesslist"], [], 0, null, ["loc", [null, [7, 25], [7, 81]]]], ["block", "link-to", ["lanconf.interfaces"], [], 1, null, ["loc", [null, [8, 25], [8, 80]]]], ["block", "link-to", ["lanconf.configuser"], [], 2, null, ["loc", [null, [9, 25], [9, 87]]]], ["block", "link-to", ["lanconf.command"], [], 3, null, ["loc", [null, [10, 25], [10, 74]]]], ["block", "link-to", ["lanconf.osupdate"], [], 4, null, ["loc", [null, [11, 25], [11, 76]]]], ["block", "if", [["get", "sub", ["loc", [null, [12, 14], [12, 17]]], 0, 0, 0, 0]], [], 5, null, ["loc", [null, [12, 8], [19, 15]]]], ["block", "link-to", ["lanconf.cicd"], [], 6, null, ["loc", [null, [20, 25], [20, 69]]]]],
         locals: [],
         templates: [child0, child1, child2, child3, child4, child5, child6]
       };
@@ -45488,11 +45865,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 21,
+              "line": 23,
               "column": 104
             },
             "end": {
-              "line": 21,
+              "line": 23,
               "column": 122
             }
           },
@@ -45523,11 +45900,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 21,
+              "line": 23,
               "column": 122
             },
             "end": {
-              "line": 21,
+              "line": 23,
               "column": 136
             }
           },
@@ -45559,11 +45936,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 24,
+                "line": 26,
                 "column": 25
               },
               "end": {
-                "line": 24,
+                "line": 26,
                 "column": 72
               }
             },
@@ -45594,11 +45971,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 25,
+                "line": 27,
                 "column": 25
               },
               "end": {
-                "line": 25,
+                "line": 27,
                 "column": 71
               }
             },
@@ -45629,11 +46006,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 29,
+                "line": 31,
                 "column": 25
               },
               "end": {
-                "line": 29,
+                "line": 31,
                 "column": 65
               }
             },
@@ -45664,11 +46041,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 30,
+                "line": 32,
                 "column": 25
               },
               "end": {
-                "line": 30,
+                "line": 32,
                 "column": 60
               }
             },
@@ -45698,11 +46075,11 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 22,
+              "line": 24,
               "column": 4
             },
             "end": {
-              "line": 32,
+              "line": 34,
               "column": 4
             }
           },
@@ -45764,7 +46141,7 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
           morphs[3] = dom.createMorphAt(dom.childAt(element0, [8]), 0, 0);
           return morphs;
         },
-        statements: [["block", "link-to", ["lanconf/wanaccesslist"], [], 0, null, ["loc", [null, [24, 25], [24, 84]]]], ["block", "link-to", ["lanconf.waninterfaces"], [], 1, null, ["loc", [null, [25, 25], [25, 83]]]], ["block", "link-to", ["lanconf.wancommand"], [], 2, null, ["loc", [null, [29, 25], [29, 77]]]], ["block", "link-to", ["lanconf.wancicd"], [], 3, null, ["loc", [null, [30, 25], [30, 72]]]]],
+        statements: [["block", "link-to", ["lanconf/wanaccesslist"], [], 0, null, ["loc", [null, [26, 25], [26, 84]]]], ["block", "link-to", ["lanconf.waninterfaces"], [], 1, null, ["loc", [null, [27, 25], [27, 83]]]], ["block", "link-to", ["lanconf.wancommand"], [], 2, null, ["loc", [null, [31, 25], [31, 77]]]], ["block", "link-to", ["lanconf.wancicd"], [], 3, null, ["loc", [null, [32, 25], [32, 72]]]]],
         locals: [],
         templates: [child0, child1, child2, child3]
       };
@@ -45779,7 +46156,7 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 38,
+            "line": 40,
             "column": 0
           }
         },
@@ -45865,7 +46242,7 @@ define("netconfig/templates/lanconf", ["exports"], function (exports) {
         morphs[6] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
         return morphs;
       },
-      statements: [["element", "action", ["ltoggle"], [], ["loc", [null, [4, 31], [4, 51]]], 0, 0], ["block", "if", [["get", "ltog", ["loc", [null, [4, 110], [4, 114]]], 0, 0, 0, 0]], [], 0, 1, ["loc", [null, [4, 104], [4, 143]]]], ["block", "if", [["get", "ltog", ["loc", [null, [5, 10], [5, 14]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [5, 4], [20, 11]]]], ["element", "action", ["wtoggle"], [], ["loc", [null, [21, 31], [21, 51]]], 0, 0], ["block", "if", [["get", "wtog", ["loc", [null, [21, 110], [21, 114]]], 0, 0, 0, 0]], [], 3, 4, ["loc", [null, [21, 104], [21, 143]]]], ["block", "if", [["get", "wtog", ["loc", [null, [22, 10], [22, 14]]], 0, 0, 0, 0]], [], 5, null, ["loc", [null, [22, 4], [32, 11]]]], ["content", "outlet", ["loc", [null, [36, 2], [36, 12]]], 0, 0, 0, 0]],
+      statements: [["element", "action", ["ltoggle"], [], ["loc", [null, [4, 31], [4, 51]]], 0, 0], ["block", "if", [["get", "ltog", ["loc", [null, [4, 110], [4, 114]]], 0, 0, 0, 0]], [], 0, 1, ["loc", [null, [4, 104], [4, 143]]]], ["block", "if", [["get", "ltog", ["loc", [null, [5, 10], [5, 14]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [5, 4], [22, 11]]]], ["element", "action", ["wtoggle"], [], ["loc", [null, [23, 31], [23, 51]]], 0, 0], ["block", "if", [["get", "wtog", ["loc", [null, [23, 110], [23, 114]]], 0, 0, 0, 0]], [], 3, 4, ["loc", [null, [23, 104], [23, 143]]]], ["block", "if", [["get", "wtog", ["loc", [null, [24, 10], [24, 14]]], 0, 0, 0, 0]], [], 5, null, ["loc", [null, [24, 4], [34, 11]]]], ["content", "outlet", ["loc", [null, [38, 2], [38, 12]]], 0, 0, 0, 0]],
       locals: [],
       templates: [child0, child1, child2, child3, child4, child5]
     };
@@ -50562,7 +50939,7 @@ define("netconfig/templates/lanconf/cicd/index", ["exports"], function (exports)
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n\n  ");
+        var el4 = dom.createTextNode("\n\n   ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("div");
         dom.setAttribute(el4, "class", "typeDiv");
@@ -50767,7 +51144,7 @@ define("netconfig/templates/lanconf/cicd/index", ["exports"], function (exports)
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode(" \n  ");
+        var el3 = dom.createTextNode(" \n    ");
         dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
         var el2 = dom.createTextNode("\n\n\n    ");
@@ -57529,6 +57906,406 @@ define("netconfig/templates/lanconf/osupdate/spine", ["exports"], function (expo
       statements: [["block", "each", [["get", "superSpine", ["loc", [null, [8, 12], [8, 22]]], 0, 0, 0, 0]], [], 0, 1, ["loc", [null, [8, 4], [18, 14]]]], ["block", "each", [["get", "spine", ["loc", [null, [21, 12], [21, 17]]], 0, 0, 0, 0]], [], 2, 3, ["loc", [null, [21, 4], [31, 14]]]], ["block", "each", [["get", "CVX", ["loc", [null, [34, 12], [34, 15]]], 0, 0, 0, 0]], [], 4, 5, ["loc", [null, [34, 4], [44, 14]]]], ["block", "unless", [["get", "isUpdating", ["loc", [null, [46, 12], [46, 22]]], 0, 0, 0, 0]], [], 6, null, ["loc", [null, [46, 2], [50, 15]]]], ["element", "action", ["close"], [], ["loc", [null, [55, 34], [55, 52]]], 0, 0], ["block", "each", [["get", "imgFiles", ["loc", [null, [86, 24], [86, 32]]], 0, 0, 0, 0]], [], 7, null, ["loc", [null, [86, 16], [88, 25]]]], ["block", "unless", [["get", "isUpdating", ["loc", [null, [91, 22], [91, 32]]], 0, 0, 0, 0]], [], 8, null, ["loc", [null, [91, 12], [95, 23]]]], ["element", "action", ["close"], [], ["loc", [null, [105, 34], [105, 52]]], 0, 0]],
       locals: [],
       templates: [child0, child1, child2, child3, child4, child5, child6, child7, child8]
+    };
+  })());
+});
+define("netconfig/templates/lanconf/osupdate/updatelist", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@2.9.1",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 8,
+              "column": 14
+            },
+            "end": {
+              "line": 10,
+              "column": 14
+            }
+          },
+          "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("                  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "fa fa-close");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element1 = dom.childAt(fragment, [1]);
+          var morphs = new Array(1);
+          morphs[0] = dom.createElementMorph(element1);
+          return morphs;
+        },
+        statements: [["element", "action", ["c_search"], [], ["loc", [null, [9, 21], [9, 42]]], 0, 0]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@2.9.1",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 41,
+                "column": 12
+              },
+              "end": {
+                "line": 43,
+                "column": 12
+              }
+            },
+            "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("            ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("td");
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
+            return morphs;
+          },
+          statements: [["inline", "timestampdate", [["get", "row.attributes.last_updated", ["loc", [null, [42, 32], [42, 59]]], 0, 0, 0, 0], "Asia/Kolkata"], [], ["loc", [null, [42, 16], [42, 76]]], 0, 0]],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@2.9.1",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 43,
+                "column": 12
+              },
+              "end": {
+                "line": 45,
+                "column": 12
+              }
+            },
+            "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("            ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("td");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@2.9.1",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 33,
+              "column": 10
+            },
+            "end": {
+              "line": 47,
+              "column": 10
+            }
+          },
+          "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("          ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("tr");
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("          ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var morphs = new Array(8);
+          morphs[0] = dom.createAttrMorph(element0, 'ids');
+          morphs[1] = dom.createMorphAt(dom.childAt(element0, [1]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element0, [3]), 0, 0);
+          morphs[3] = dom.createMorphAt(dom.childAt(element0, [5]), 0, 0);
+          morphs[4] = dom.createMorphAt(dom.childAt(element0, [7]), 0, 0);
+          morphs[5] = dom.createMorphAt(dom.childAt(element0, [9]), 0, 0);
+          morphs[6] = dom.createMorphAt(dom.childAt(element0, [11]), 0, 0);
+          morphs[7] = dom.createMorphAt(element0, 13, 13);
+          return morphs;
+        },
+        statements: [["attribute", "ids", ["get", "row.devices", ["loc", [null, [34, 20], [34, 31]]], 0, 0, 0, 0], 0, 0, 0, 0], ["content", "row.attributes.devices", ["loc", [null, [35, 16], [35, 42]]], 0, 0, 0, 0], ["content", "row.attributes.app_user", ["loc", [null, [36, 16], [36, 43]]], 0, 0, 0, 0], ["content", "row.attributes.device_user", ["loc", [null, [37, 16], [37, 46]]], 0, 0, 0, 0], ["content", "row.attributes.image", ["loc", [null, [38, 16], [38, 40]]], 0, 0, 0, 0], ["content", "row.attributes.status", ["loc", [null, [39, 16], [39, 41]]], 0, 0, 0, 0], ["content", "row.attributes.log", ["loc", [null, [40, 16], [40, 38]]], 0, 0, 0, 0], ["block", "if", [["get", "row.attributes.last_updated", ["loc", [null, [41, 18], [41, 45]]], 0, 0, 0, 0]], [], 0, 1, ["loc", [null, [41, 12], [45, 19]]]]],
+        locals: ["row"],
+        templates: [child0, child1]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@2.9.1",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 50,
+            "column": 6
+          }
+        },
+        "moduleName": "netconfig/templates/lanconf/osupdate/updatelist.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("header");
+        dom.setAttribute(el1, "class", "shdr");
+        var el2 = dom.createTextNode("\n    ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("ul");
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("li");
+        var el4 = dom.createTextNode("Upgrade History");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("li");
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "cmmt_s");
+        var el5 = dom.createTextNode("\n\n              ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("input");
+        dom.setAttribute(el5, "class", "s_bar");
+        dom.setAttribute(el5, "type", "text");
+        dom.setAttribute(el5, "id", "cmmt_s");
+        dom.setAttribute(el5, "placeholder", "search");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("              ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fa fa-search");
+        dom.setAttribute(el5, "aria-hidden", "true");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n\n          ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n     ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("button");
+        dom.setAttribute(el2, "class", "addbtn");
+        dom.setAttribute(el2, "style", "position:unset;");
+        var el3 = dom.createTextNode("Export History");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "innerContainer");
+        var el2 = dom.createTextNode("\n    ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("table");
+        dom.setAttribute(el2, "width", "100%");
+        dom.setAttribute(el2, "cellpadding", "0");
+        dom.setAttribute(el2, "cellspacing", "0");
+        dom.setAttribute(el2, "border", "0");
+        dom.setAttribute(el2, "class", "table");
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("thead");
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("tr");
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("Devices");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("App User");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("Device User");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("image");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("Result");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("Remarks");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("td");
+        var el6 = dom.createTextNode("Updated time");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n            ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("tbody");
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element2 = dom.childAt(fragment, [0]);
+        var element3 = dom.childAt(element2, [1, 3, 1]);
+        var element4 = dom.childAt(element3, [1]);
+        var element5 = dom.childAt(element3, [5]);
+        var element6 = dom.childAt(element2, [3]);
+        var morphs = new Array(5);
+        morphs[0] = dom.createAttrMorph(element4, 'oninput');
+        morphs[1] = dom.createMorphAt(element3, 3, 3);
+        morphs[2] = dom.createElementMorph(element5);
+        morphs[3] = dom.createElementMorph(element6);
+        morphs[4] = dom.createMorphAt(dom.childAt(fragment, [2, 1, 3]), 1, 1);
+        return morphs;
+      },
+      statements: [["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [7, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [8, 20], [8, 28]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [8, 14], [10, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [11, 17], [11, 36]]], 0, 0], ["element", "action", ["csvdownld", ["get", "item", ["loc", [null, [16, 35], [16, 39]]], 0, 0, 0, 0]], [], ["loc", [null, [16, 14], [16, 41]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [33, 18], [33, 25]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [33, 10], [47, 19]]]]],
+      locals: [],
+      templates: [child0, child1]
     };
   })());
 });
@@ -65259,8 +66036,8 @@ define("netconfig/templates/login", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 22,
-            "column": 6
+            "line": 24,
+            "column": 0
           }
         },
         "moduleName": "netconfig/templates/login.hbs"
@@ -65290,69 +66067,9 @@ define("netconfig/templates/login", ["exports"], function (exports) {
         dom.setAttribute(el4, "src", "/static/netconf/app/images/zoho_nocops.png");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
+        var el3 = dom.createTextNode("\n");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("form");
-        dom.setAttribute(el3, "name", "login");
-        var el4 = dom.createTextNode("\n       ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "formRow");
-        var el5 = dom.createTextNode("\n           ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("label");
-        var el6 = dom.createTextNode("Username");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n           ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("input");
-        dom.setAttribute(el5, "type", "text");
-        dom.setAttribute(el5, "name", "username");
-        dom.setAttribute(el5, "class", "required");
-        dom.setAttribute(el5, "autocomplete", "off");
-        dom.setAttribute(el5, "placeholder", "Enter username");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n       ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n       ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "formRow");
-        var el5 = dom.createTextNode("\n           ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("label");
-        var el6 = dom.createTextNode("Password");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n           ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("input");
-        dom.setAttribute(el5, "type", "password");
-        dom.setAttribute(el5, "name", "password");
-        dom.setAttribute(el5, "class", "required");
-        dom.setAttribute(el5, "autocomplete", "off");
-        dom.setAttribute(el5, "placeholder", "Enter Password");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n       ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n       ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "formAct");
-        var el5 = dom.createTextNode("\n           ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n       ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n   ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode(" \n    ");
+        var el3 = dom.createTextNode("    ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("div");
         dom.setAttribute(el3, "class", "formAct");
@@ -65369,16 +66086,16 @@ define("netconfig/templates/login", ["exports"], function (exports) {
         var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [0, 3]);
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(element0, [3, 5]), 1, 1);
-        morphs[1] = dom.createMorphAt(dom.childAt(element0, [5]), 1, 1);
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 3, 4]), 1, 1);
         return morphs;
       },
-      statements: [["inline", "bs-primary", [], ["action", "login", "btn_name", "Login", "class", "loginBtn", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [15, 83], [15, 91]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [15, 11], [15, 93]]], 0, 0], ["inline", "bs-primary", [], ["btn_name", "Login with zohocorp", "class", "loginzoho", "action", "iamRedirect", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [19, 100], [19, 108]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [19, 6], [19, 110]]], 0, 0]],
+      statements: [["inline", "bs-primary", [], ["btn_name", "Login with zohocorp", "class", "loginzoho", "action", "iamRedirect", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [20, 100], [20, 108]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [20, 6], [20, 110]]], 0, 0]],
       locals: [],
       templates: []
     };
@@ -66736,7 +67453,7 @@ define("netconfig/templates/monitoring/inventory", ["exports"], function (export
         dom.appendChild(el2, el3);
         var el3 = dom.createComment("");
         dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("        \n\n");
+        var el3 = dom.createTextNode("        \n        \n\n");
         dom.appendChild(el2, el3);
         var el3 = dom.createComment("");
         dom.appendChild(el2, el3);
@@ -70241,7 +70958,7 @@ define("netconfig/templates/myservices/iptables/index", ["exports"], function (e
             "column": 0
           },
           "end": {
-            "line": 41,
+            "line": 56,
             "column": 6
           }
         },
@@ -70298,6 +71015,70 @@ define("netconfig/templates/myservices/iptables/index", ["exports"], function (e
         var el2 = dom.createElement("div");
         dom.setAttribute(el2, "class", "content-container");
         dom.setAttribute(el2, "style", "float:left");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "formRow");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("label");
+        dom.setAttribute(el5, "class", "checklabel");
+        var el6 = dom.createTextNode("\n            ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n            ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("span");
+        dom.setAttribute(el6, "class", "lan-action");
+        var el7 = dom.createTextNode("IPV4 Rules ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n            ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("span");
+        dom.setAttribute(el6, "class", "checkmark");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("h1");
+        dom.setAttribute(el5, "style", "padding-right: 10px;");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("label");
+        dom.setAttribute(el5, "class", "checklabel");
+        var el6 = dom.createTextNode("\n            ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n            ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("span");
+        dom.setAttribute(el6, "class", "lan-action");
+        var el7 = dom.createTextNode("IPV6 Rules ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n            ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("span");
+        dom.setAttribute(el6, "class", "checkmark");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("div");
@@ -70435,16 +71216,20 @@ define("netconfig/templates/myservices/iptables/index", ["exports"], function (e
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [0]);
-        var element1 = dom.childAt(fragment, [2, 5, 1]);
-        var element2 = dom.childAt(element1, [1, 1]);
-        var morphs = new Array(4);
+        var element1 = dom.childAt(fragment, [2]);
+        var element2 = dom.childAt(element1, [1, 1, 1]);
+        var element3 = dom.childAt(element1, [5, 1]);
+        var element4 = dom.childAt(element3, [1, 1]);
+        var morphs = new Array(6);
         morphs[0] = dom.createMorphAt(dom.childAt(element0, [1, 1]), 0, 0);
         morphs[1] = dom.createMorphAt(element0, 3, 3);
-        morphs[2] = dom.createElementMorph(element2);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [3, 5]), 1, 1);
+        morphs[2] = dom.createMorphAt(dom.childAt(element2, [1]), 1, 1);
+        morphs[3] = dom.createMorphAt(dom.childAt(element2, [5]), 1, 1);
+        morphs[4] = dom.createElementMorph(element4);
+        morphs[5] = dom.createMorphAt(dom.childAt(element3, [3, 5]), 1, 1);
         return morphs;
       },
-      statements: [["block", "link-to", ["myservices.index", ["get", "serviceid", ["loc", [null, [3, 42], [3, 51]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [3, 12], [3, 82]]]], ["inline", "bs-primary", [], ["class", "addbtn", "action", "callConvert", "label", "Save", "loadingTxt", "Saving..", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [7, 98], [7, 106]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [7, 4], [7, 108]]], 0, 0], ["element", "action", ["close_popup"], [], ["loc", [null, [23, 32], [23, 56]]], 0, 0], ["inline", "bs-primary", [], ["action", "convertToJson", "label", "Validate", "loadingTxt", "Validating..", "isLoading", ["subexpr", "@mut", [["get", "isLoading", ["loc", [null, [36, 103], [36, 112]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [36, 14], [36, 114]]], 0, 0]],
+      statements: [["block", "link-to", ["myservices.index", ["get", "serviceid", ["loc", [null, [3, 42], [3, 51]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [3, 12], [3, 82]]]], ["inline", "bs-primary", [], ["class", "addbtn", "action", "callConvert", "label", "Save", "loadingTxt", "Saving..", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [7, 98], [7, 106]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [7, 4], [7, 108]]], 0, 0], ["inline", "input", [], ["name", "cusToggipv4", "type", "checkbox", "change", ["subexpr", "action", ["customToggleipv4"], [], ["loc", [null, [15, 63], [15, 90]]], 0, 0]], ["loc", [null, [15, 12], [15, 92]]], 0, 0], ["inline", "input", [], ["name", "cusToggipv6", "type", "checkbox", "change", ["subexpr", "action", ["customToggleipv6"], [], ["loc", [null, [21, 62], [21, 89]]], 0, 0]], ["loc", [null, [21, 12], [21, 91]]], 0, 0], ["element", "action", ["close_popup"], [], ["loc", [null, [38, 32], [38, 56]]], 0, 0], ["inline", "bs-primary", [], ["action", "convertToJson", "label", "Validate", "loadingTxt", "Validating..", "isLoading", ["subexpr", "@mut", [["get", "isLoading", ["loc", [null, [51, 103], [51, 112]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [51, 14], [51, 114]]], 0, 0]],
       locals: [],
       templates: [child0]
     };
@@ -71480,11 +72265,11 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 34,
+              "line": 35,
               "column": 16
             },
             "end": {
-              "line": 42,
+              "line": 43,
               "column": 16
             }
           },
@@ -71548,7 +72333,7 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
           morphs[4] = dom.createUnsafeMorphAt(dom.childAt(element0, [9]), 0, 0);
           return morphs;
         },
-        statements: [["content", "row.attributes.router", ["loc", [null, [36, 28], [36, 53]]], 0, 0, 0, 0], ["content", "row.attributes.a_username", ["loc", [null, [37, 28], [37, 57]]], 0, 0, 0, 0], ["content", "row.attributes.r_username", ["loc", [null, [38, 35], [38, 64]]], 0, 0, 0, 0], ["content", "row.attributes.ctext", ["loc", [null, [39, 28], [39, 52]]], 0, 0, 0, 0], ["inline", "timestampdate", [["get", "row.attributes.c_timestamp", ["loc", [null, [40, 52], [40, 78]]], 0, 0, 0, 0], "Asia/Kolkata"], [], ["loc", [null, [40, 35], [40, 96]]], 0, 0]],
+        statements: [["content", "row.attributes.router", ["loc", [null, [37, 28], [37, 53]]], 0, 0, 0, 0], ["content", "row.attributes.a_username", ["loc", [null, [38, 28], [38, 57]]], 0, 0, 0, 0], ["content", "row.attributes.r_username", ["loc", [null, [39, 35], [39, 64]]], 0, 0, 0, 0], ["content", "row.attributes.ctext", ["loc", [null, [40, 28], [40, 52]]], 0, 0, 0, 0], ["inline", "timestampdate", [["get", "row.attributes.c_timestamp", ["loc", [null, [41, 52], [41, 78]]], 0, 0, 0, 0], "Asia/Kolkata"], [], ["loc", [null, [41, 35], [41, 96]]], 0, 0]],
         locals: ["row"],
         templates: []
       };
@@ -71560,11 +72345,11 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 46,
+              "line": 47,
               "column": 0
             },
             "end": {
-              "line": 48,
+              "line": 49,
               "column": 0
             }
           },
@@ -71589,7 +72374,7 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           return morphs;
         },
-        statements: [["content", "loading-page-scroll", ["loc", [null, [47, 3], [47, 26]]], 0, 0, 0, 0]],
+        statements: [["content", "loading-page-scroll", ["loc", [null, [48, 3], [48, 26]]], 0, 0, 0, 0]],
         locals: [],
         templates: []
       };
@@ -71604,7 +72389,7 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 50,
+            "line": 51,
             "column": 0
           }
         },
@@ -71663,6 +72448,14 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n     ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("button");
+        dom.setAttribute(el2, "class", "addbtn");
+        dom.setAttribute(el2, "style", "position:unset;");
+        var el3 = dom.createTextNode("Export Logs");
         dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
         var el2 = dom.createTextNode("\n");
@@ -71754,21 +72547,24 @@ define("netconfig/templates/settings/commits", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element2 = dom.childAt(fragment, [0, 1]);
-        var element3 = dom.childAt(element2, [3, 1]);
-        var element4 = dom.childAt(element3, [1]);
-        var element5 = dom.childAt(element3, [5]);
-        var element6 = dom.childAt(fragment, [2]);
-        var morphs = new Array(6);
-        morphs[0] = dom.createMorphAt(dom.childAt(element2, [1]), 1, 1);
-        morphs[1] = dom.createAttrMorph(element4, 'oninput');
-        morphs[2] = dom.createMorphAt(element3, 3, 3);
-        morphs[3] = dom.createElementMorph(element5);
-        morphs[4] = dom.createMorphAt(dom.childAt(element6, [1, 1, 3]), 1, 1);
-        morphs[5] = dom.createMorphAt(element6, 3, 3);
+        var element2 = dom.childAt(fragment, [0]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element3, [3, 1]);
+        var element5 = dom.childAt(element4, [1]);
+        var element6 = dom.childAt(element4, [5]);
+        var element7 = dom.childAt(element2, [3]);
+        var element8 = dom.childAt(fragment, [2]);
+        var morphs = new Array(7);
+        morphs[0] = dom.createMorphAt(dom.childAt(element3, [1]), 1, 1);
+        morphs[1] = dom.createAttrMorph(element5, 'oninput');
+        morphs[2] = dom.createMorphAt(element4, 3, 3);
+        morphs[3] = dom.createElementMorph(element6);
+        morphs[4] = dom.createElementMorph(element7);
+        morphs[5] = dom.createMorphAt(dom.childAt(element8, [1, 1, 3]), 1, 1);
+        morphs[6] = dom.createMorphAt(element8, 3, 3);
         return morphs;
       },
-      statements: [["block", "ember-chosen", [], ["name", "commit", "action", "changeCommit", "placeholder", "Select DC", "class", "commit-drop"], 0, null, ["loc", [null, [4, 10], [7, 27]]]], ["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [11, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [12, 20], [12, 28]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [12, 14], [14, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [15, 17], [15, 36]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [34, 24], [34, 31]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [34, 16], [42, 25]]]], ["block", "infinite-scroll", [], ["content", ["subexpr", "@mut", [["get", "content", ["loc", [null, [46, 27], [46, 34]]], 0, 0, 0, 0]], [], [], 0, 0], "hasMore", ["subexpr", "@mut", [["get", "hasMore", ["loc", [null, [46, 43], [46, 50]]], 0, 0, 0, 0]], [], [], 0, 0], "scrollable", ".innerContainer"], 3, null, ["loc", [null, [46, 0], [48, 20]]]]],
+      statements: [["block", "ember-chosen", [], ["name", "commit", "action", "changeCommit", "placeholder", "Select DC", "class", "commit-drop"], 0, null, ["loc", [null, [4, 10], [7, 27]]]], ["attribute", "oninput", ["subexpr", "action", ["search"], [], ["loc", [null, [null, null], [11, 62]]], 0, 0], 0, 0, 0, 0], ["block", "if", [["get", "c_search", ["loc", [null, [12, 20], [12, 28]]], 0, 0, 0, 0]], [], 1, null, ["loc", [null, [12, 14], [14, 21]]]], ["element", "action", ["search"], [], ["loc", [null, [15, 17], [15, 36]]], 0, 0], ["element", "action", ["csvdownld", ["get", "item", ["loc", [null, [19, 35], [19, 39]]], 0, 0, 0, 0]], [], ["loc", [null, [19, 14], [19, 41]]], 0, 0], ["block", "each", [["get", "content", ["loc", [null, [35, 24], [35, 31]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [35, 16], [43, 25]]]], ["block", "infinite-scroll", [], ["content", ["subexpr", "@mut", [["get", "content", ["loc", [null, [47, 27], [47, 34]]], 0, 0, 0, 0]], [], [], 0, 0], "hasMore", ["subexpr", "@mut", [["get", "hasMore", ["loc", [null, [47, 43], [47, 50]]], 0, 0, 0, 0]], [], [], 0, 0], "scrollable", ".innerContainer"], 3, null, ["loc", [null, [47, 0], [49, 20]]]]],
       locals: [],
       templates: [child0, child1, child2, child3]
     };
@@ -76903,7 +77699,7 @@ define("netconfig/templates/testflow/pipeline", ["exports"], function (exports) 
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("iframe");
-        dom.setAttribute(el3, "src", "https://ab1-netops-jen.zohonoc.com/job/projectcicdpipeline/");
+        dom.setAttribute(el3, "src", "http://172.21.174.105:8080/job/projectcicdpipeline/");
         dom.setAttribute(el3, "id", "jenkinstab");
         dom.setAttribute(el3, "frameborder", "0");
         dom.appendChild(el2, el3);
@@ -77365,22 +78161,22 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element4 = dom.childAt(fragment, [1]);
-          var element5 = dom.childAt(element4, [17]);
-          var element6 = dom.childAt(element5, [3]);
-          var element7 = dom.childAt(element5, [5]);
+          var element6 = dom.childAt(fragment, [1]);
+          var element7 = dom.childAt(element6, [17]);
+          var element8 = dom.childAt(element7, [3]);
+          var element9 = dom.childAt(element7, [5]);
           var morphs = new Array(11);
-          morphs[0] = dom.createAttrMorph(element4, 'ids');
-          morphs[1] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
-          morphs[2] = dom.createMorphAt(dom.childAt(element4, [3]), 0, 0);
-          morphs[3] = dom.createMorphAt(dom.childAt(element4, [6]), 0, 0);
-          morphs[4] = dom.createMorphAt(dom.childAt(element4, [9]), 0, 0);
-          morphs[5] = dom.createMorphAt(dom.childAt(element4, [11]), 0, 0);
-          morphs[6] = dom.createMorphAt(dom.childAt(element4, [13]), 0, 0);
-          morphs[7] = dom.createMorphAt(dom.childAt(element4, [15]), 0, 0);
-          morphs[8] = dom.createMorphAt(element5, 1, 1);
-          morphs[9] = dom.createElementMorph(element6);
-          morphs[10] = dom.createElementMorph(element7);
+          morphs[0] = dom.createAttrMorph(element6, 'ids');
+          morphs[1] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element6, [3]), 0, 0);
+          morphs[3] = dom.createMorphAt(dom.childAt(element6, [6]), 0, 0);
+          morphs[4] = dom.createMorphAt(dom.childAt(element6, [9]), 0, 0);
+          morphs[5] = dom.createMorphAt(dom.childAt(element6, [11]), 0, 0);
+          morphs[6] = dom.createMorphAt(dom.childAt(element6, [13]), 0, 0);
+          morphs[7] = dom.createMorphAt(dom.childAt(element6, [15]), 0, 0);
+          morphs[8] = dom.createMorphAt(element7, 1, 1);
+          morphs[9] = dom.createElementMorph(element8);
+          morphs[10] = dom.createElementMorph(element9);
           return morphs;
         },
         statements: [["attribute", "ids", ["concat", [["get", "item.request_id", ["loc", [null, [42, 27], [42, 42]]], 0, 0, 0, 0]], 0, 0, 0, 0, 0], 0, 0, 0, 0], ["content", "item.request_id", ["loc", [null, [43, 24], [43, 43]]], 0, 0, 0, 0], ["content", "item.requester_username", ["loc", [null, [44, 31], [44, 58]]], 0, 0, 0, 0], ["inline", "commitlogmap", [["get", "item.command_category", ["loc", [null, [46, 39], [46, 60]]], 0, 0, 0, 0]], [], ["loc", [null, [46, 24], [46, 63]]], 0, 0], ["content", "item.entity_name", ["loc", [null, [48, 24], [48, 44]]], 0, 0, 0, 0], ["content", "item.config_comment", ["loc", [null, [49, 24], [49, 47]]], 0, 0, 0, 0], ["content", "item.approver", ["loc", [null, [50, 31], [50, 48]]], 0, 0, 0, 0], ["inline", "formate-date", [["get", "item.created", ["loc", [null, [51, 46], [51, 58]]], 0, 0, 0, 0], "YYYY-MM-DD HH:mm:ss"], [], ["loc", [null, [51, 31], [51, 82]]], 0, 0], ["block", "if", [["subexpr", "eq", [["get", "item.approve_status", ["loc", [null, [53, 34], [53, 53]]], 0, 0, 0, 0], 0], [], ["loc", [null, [53, 30], [53, 56]]], 0, 0]], [], 0, 1, ["loc", [null, [53, 24], [59, 31]]]], ["element", "action", ["viewRouterDetail", ["get", "item", ["loc", [null, [60, 95], [60, 99]]], 0, 0, 0, 0]], [], ["loc", [null, [60, 67], [60, 101]]], 0, 0], ["element", "action", ["showComments", ["get", "item", ["loc", [null, [62, 84], [62, 88]]], 0, 0, 0, 0]], [], ["loc", [null, [62, 60], [62, 90]]], 0, 0]],
@@ -77428,9 +78224,9 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element3 = dom.childAt(fragment, [1]);
+              var element5 = dom.childAt(fragment, [1]);
               var morphs = new Array(1);
-              morphs[0] = dom.createElementMorph(element3);
+              morphs[0] = dom.createElementMorph(element5);
               return morphs;
             },
             statements: [["element", "action", ["executeWorkflow"], [], ["loc", [null, [79, 59], [79, 87]]], 0, 0]],
@@ -77564,11 +78360,11 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element1 = dom.childAt(fragment, [1]);
-              var element2 = dom.childAt(fragment, [3]);
+              var element3 = dom.childAt(fragment, [1]);
+              var element4 = dom.childAt(fragment, [3]);
               var morphs = new Array(2);
-              morphs[0] = dom.createElementMorph(element1);
-              morphs[1] = dom.createElementMorph(element2);
+              morphs[0] = dom.createElementMorph(element3);
+              morphs[1] = dom.createElementMorph(element4);
               return morphs;
             },
             statements: [["element", "action", ["updateWorkStat", "1"], [], ["loc", [null, [84, 55], [84, 86]]], 0, 0], ["element", "action", ["updateWorkStat", "2"], [], ["loc", [null, [85, 52], [85, 83]]], 0, 0]],
@@ -77654,9 +78450,9 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
                 return el0;
               },
               buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                var element0 = dom.childAt(fragment, [1]);
+                var element2 = dom.childAt(fragment, [1]);
                 var morphs = new Array(1);
-                morphs[0] = dom.createElementMorph(element0);
+                morphs[0] = dom.createElementMorph(element2);
                 return morphs;
               },
               statements: [["element", "action", ["executeWorkflow"], [], ["loc", [null, [89, 59], [89, 87]]], 0, 0]],
@@ -77926,7 +78722,7 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
               "column": 16
             },
             "end": {
-              "line": 109,
+              "line": 110,
               "column": 16
             }
           },
@@ -77938,11 +78734,22 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("                    ");
+          var el1 = dom.createTextNode("                     ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("span");
           dom.setAttribute(el1, "class", "workflow-rtxt");
           var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode(" ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("a");
+          dom.setAttribute(el2, "style", "cursor: pointer;");
+          var el3 = dom.createTextNode("[");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("]");
+          dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
@@ -77950,11 +78757,15 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
+          var element0 = dom.childAt(fragment, [1]);
+          var element1 = dom.childAt(element0, [2]);
+          var morphs = new Array(3);
+          morphs[0] = dom.createMorphAt(element0, 0, 0);
+          morphs[1] = dom.createElementMorph(element1);
+          morphs[2] = dom.createMorphAt(element1, 1, 1);
           return morphs;
         },
-        statements: [["content", "item", ["loc", [null, [108, 48], [108, 56]]], 0, 0, 0, 0]],
+        statements: [["content", "item.hostname", ["loc", [null, [109, 49], [109, 66]]], 0, 0, 0, 0], ["element", "action", ["getConfig", ["get", "item.host", ["loc", [null, [109, 97], [109, 106]]], 0, 0, 0, 0]], [], ["loc", [null, [109, 75], [109, 109]]], 0, 0], ["content", "item.host", ["loc", [null, [109, 136], [109, 149]]], 0, 0, 0, 0]],
         locals: ["item"],
         templates: []
       };
@@ -77966,11 +78777,11 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           "loc": {
             "source": null,
             "start": {
-              "line": 115,
+              "line": 116,
               "column": 24
             },
             "end": {
-              "line": 117,
+              "line": 118,
               "column": 24
             }
           },
@@ -77997,7 +78808,7 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
           return morphs;
         },
-        statements: [["content", "item", ["loc", [null, [116, 32], [116, 40]]], 0, 0, 0, 0]],
+        statements: [["content", "item", ["loc", [null, [117, 32], [117, 40]]], 0, 0, 0, 0]],
         locals: ["item"],
         templates: []
       };
@@ -78010,11 +78821,11 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
             "loc": {
               "source": null,
               "start": {
-                "line": 123,
+                "line": 124,
                 "column": 28
               },
               "end": {
-                "line": 125,
+                "line": 126,
                 "column": 28
               }
             },
@@ -78041,7 +78852,7 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
             morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
             return morphs;
           },
-          statements: [["content", "col", ["loc", [null, [124, 36], [124, 43]]], 0, 0, 0, 0]],
+          statements: [["content", "col", ["loc", [null, [125, 36], [125, 43]]], 0, 0, 0, 0]],
           locals: ["col"],
           templates: []
         };
@@ -78052,11 +78863,11 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           "loc": {
             "source": null,
             "start": {
-              "line": 121,
+              "line": 122,
               "column": 20
             },
             "end": {
-              "line": 127,
+              "line": 128,
               "column": 20
             }
           },
@@ -78087,7 +78898,7 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           return morphs;
         },
-        statements: [["block", "each", [["get", "item", ["loc", [null, [123, 36], [123, 40]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [123, 28], [125, 37]]]]],
+        statements: [["block", "each", [["get", "item", ["loc", [null, [124, 36], [124, 40]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [124, 28], [126, 37]]]]],
         locals: ["item"],
         templates: [child0]
       };
@@ -78099,11 +78910,11 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           "loc": {
             "source": null,
             "start": {
-              "line": 159,
+              "line": 160,
               "column": 0
             },
             "end": {
-              "line": 161,
+              "line": 162,
               "column": 0
             }
           },
@@ -78128,7 +78939,7 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
           morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           return morphs;
         },
-        statements: [["content", "loading-page-scroll", ["loc", [null, [160, 4], [160, 27]]], 0, 0, 0, 0]],
+        statements: [["content", "loading-page-scroll", ["loc", [null, [161, 4], [161, 27]]], 0, 0, 0, 0]],
         locals: [],
         templates: []
       };
@@ -78143,8 +78954,8 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
             "column": 0
           },
           "end": {
-            "line": 162,
-            "column": 0
+            "line": 180,
+            "column": 6
           }
         },
         "moduleName": "netconfig/templates/testflow/workflow.hbs"
@@ -78166,6 +78977,8 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
         var el3 = dom.createTextNode("        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("li");
+        var el4 = dom.createTextNode("WorkFlow");
+        dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
@@ -78554,33 +79367,107 @@ define("netconfig/templates/testflow/workflow", ["exports"], function (exports) 
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "id", "popup1");
+        dom.setAttribute(el1, "class", "overlay2");
+        var el2 = dom.createTextNode("\n	");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "popup");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "title2");
+        var el4 = dom.createTextNode("\n		");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("h2");
+        var el5 = dom.createTextNode("Configuration of ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("span");
+        dom.setAttribute(el4, "class", "conf-refresh");
+        var el5 = dom.createTextNode("\n          ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fa fa-refresh");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n		  ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("a");
+        dom.setAttribute(el4, "class", "close");
+        var el5 = dom.createTextNode("×");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n	");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "content2");
+        dom.setAttribute(el3, "pre-line", "");
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("pre");
+        var el5 = dom.createTextNode("\n			");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n		");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n	");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element8 = dom.childAt(fragment, [0, 1]);
-        var element9 = dom.childAt(fragment, [2]);
-        var element10 = dom.childAt(element9, [5]);
-        var element11 = dom.childAt(element10, [3]);
-        var element12 = dom.childAt(element11, [9]);
-        var element13 = dom.childAt(element9, [7, 1]);
-        var element14 = dom.childAt(element13, [1, 1]);
-        var morphs = new Array(12);
-        morphs[0] = dom.createMorphAt(dom.childAt(element8, [4]), 3, 3);
-        morphs[1] = dom.createMorphAt(dom.childAt(element8, [6]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element9, [1, 3]), 1, 1);
-        morphs[3] = dom.createMorphAt(dom.childAt(element9, [3, 3]), 0, 0);
-        morphs[4] = dom.createMorphAt(dom.childAt(element10, [1, 3]), 1, 1);
-        morphs[5] = dom.createMorphAt(element11, 1, 1);
-        morphs[6] = dom.createMorphAt(dom.childAt(element11, [5]), 1, 1);
-        morphs[7] = dom.createMorphAt(dom.childAt(element12, [1, 1]), 1, 1);
-        morphs[8] = dom.createMorphAt(dom.childAt(element12, [3]), 1, 1);
-        morphs[9] = dom.createElementMorph(element14);
-        morphs[10] = dom.createMorphAt(dom.childAt(element13, [3, 7]), 1, 1);
+        var element10 = dom.childAt(fragment, [0, 1]);
+        var element11 = dom.childAt(fragment, [2]);
+        var element12 = dom.childAt(element11, [5]);
+        var element13 = dom.childAt(element12, [3]);
+        var element14 = dom.childAt(element13, [9]);
+        var element15 = dom.childAt(element11, [7, 1]);
+        var element16 = dom.childAt(element15, [1, 1]);
+        var element17 = dom.childAt(fragment, [6, 1]);
+        var element18 = dom.childAt(element17, [1]);
+        var element19 = dom.childAt(element18, [3, 1]);
+        var element20 = dom.childAt(element18, [5]);
+        var morphs = new Array(16);
+        morphs[0] = dom.createMorphAt(dom.childAt(element10, [4]), 3, 3);
+        morphs[1] = dom.createMorphAt(dom.childAt(element10, [6]), 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element11, [1, 3]), 1, 1);
+        morphs[3] = dom.createMorphAt(dom.childAt(element11, [3, 3]), 0, 0);
+        morphs[4] = dom.createMorphAt(dom.childAt(element12, [1, 3]), 1, 1);
+        morphs[5] = dom.createMorphAt(element13, 1, 1);
+        morphs[6] = dom.createMorphAt(dom.childAt(element13, [5]), 1, 1);
+        morphs[7] = dom.createMorphAt(dom.childAt(element14, [1, 1]), 1, 1);
+        morphs[8] = dom.createMorphAt(dom.childAt(element14, [3]), 1, 1);
+        morphs[9] = dom.createElementMorph(element16);
+        morphs[10] = dom.createMorphAt(dom.childAt(element15, [3, 7]), 1, 1);
         morphs[11] = dom.createMorphAt(fragment, 4, 4, contextualElement);
-        dom.insertBoundary(fragment, null);
+        morphs[12] = dom.createMorphAt(dom.childAt(element18, [1]), 1, 1);
+        morphs[13] = dom.createElementMorph(element19);
+        morphs[14] = dom.createElementMorph(element20);
+        morphs[15] = dom.createMorphAt(dom.childAt(element17, [3, 1]), 1, 1);
         return morphs;
       },
-      statements: [["block", "ember-chosen", [], ["name", "date", "action", "updateFilter", "placeholder", "Select Date"], 0, null, ["loc", [null, [7, 12], [12, 29]]]], ["block", "ember-chosen", [], ["name", "status", "action", "updateFilter", "placeholder", "Select Date"], 1, null, ["loc", [null, [16, 12], [21, 29]]]], ["block", "each", [["get", "content", ["loc", [null, [41, 20], [41, 27]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [41, 12], [65, 21]]]], ["content", "approver_comment", ["loc", [null, [70, 39], [70, 59]]], 0, 0, 0, 0], ["block", "if", [["get", "isAdmin", ["loc", [null, [76, 22], [76, 29]]], 0, 0, 0, 0]], [], 3, 4, ["loc", [null, [76, 16], [91, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "routerData.approve_status", ["loc", [null, [95, 22], [95, 47]]], 0, 0, 0, 0], 0], [], ["loc", [null, [95, 18], [95, 50]]], 0, 0]], [], 5, null, ["loc", [null, [95, 12], [104, 19]]]], ["block", "each", [["get", "routerData.routers", ["loc", [null, [107, 24], [107, 42]]], 0, 0, 0, 0]], [], 6, null, ["loc", [null, [107, 16], [109, 25]]]], ["block", "each", [["get", "routerData.acttbl.hdr", ["loc", [null, [115, 32], [115, 53]]], 0, 0, 0, 0]], [], 7, null, ["loc", [null, [115, 24], [117, 33]]]], ["block", "each", [["get", "routerData.acttbl.body", ["loc", [null, [121, 28], [121, 50]]], 0, 0, 0, 0]], [], 8, null, ["loc", [null, [121, 20], [127, 29]]]], ["element", "action", ["close_popup"], [], ["loc", [null, [135, 32], [135, 56]]], 0, 0], ["inline", "bs-primary", [], ["action", "login", "label", "Login", "loadingTxt", "Logging In..", "isLoading", ["subexpr", "@mut", [["get", "isLoading", ["loc", [null, [153, 94], [153, 103]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [153, 16], [153, 105]]], 0, 0], ["block", "infinite-scroll", [], ["content", ["subexpr", "@mut", [["get", "content", ["loc", [null, [159, 27], [159, 34]]], 0, 0, 0, 0]], [], [], 0, 0], "hasMore", ["subexpr", "@mut", [["get", "hasMore", ["loc", [null, [159, 43], [159, 50]]], 0, 0, 0, 0]], [], [], 0, 0], "scrollable", ".innerContainer"], 9, null, ["loc", [null, [159, 0], [161, 20]]]]],
+      statements: [["block", "ember-chosen", [], ["name", "date", "action", "updateFilter", "placeholder", "Select Date"], 0, null, ["loc", [null, [7, 12], [12, 29]]]], ["block", "ember-chosen", [], ["name", "status", "action", "updateFilter", "placeholder", "Select Date"], 1, null, ["loc", [null, [16, 12], [21, 29]]]], ["block", "each", [["get", "content", ["loc", [null, [41, 20], [41, 27]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [41, 12], [65, 21]]]], ["content", "approver_comment", ["loc", [null, [70, 39], [70, 59]]], 0, 0, 0, 0], ["block", "if", [["get", "isAdmin", ["loc", [null, [76, 22], [76, 29]]], 0, 0, 0, 0]], [], 3, 4, ["loc", [null, [76, 16], [91, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "routerData.approve_status", ["loc", [null, [95, 22], [95, 47]]], 0, 0, 0, 0], 0], [], ["loc", [null, [95, 18], [95, 50]]], 0, 0]], [], 5, null, ["loc", [null, [95, 12], [104, 19]]]], ["block", "each", [["get", "parseData", ["loc", [null, [107, 24], [107, 33]]], 0, 0, 0, 0]], [], 6, null, ["loc", [null, [107, 16], [110, 25]]]], ["block", "each", [["get", "routerData.acttbl.hdr", ["loc", [null, [116, 32], [116, 53]]], 0, 0, 0, 0]], [], 7, null, ["loc", [null, [116, 24], [118, 33]]]], ["block", "each", [["get", "routerData.acttbl.body", ["loc", [null, [122, 28], [122, 50]]], 0, 0, 0, 0]], [], 8, null, ["loc", [null, [122, 20], [128, 29]]]], ["element", "action", ["close_popup"], [], ["loc", [null, [136, 32], [136, 56]]], 0, 0], ["inline", "bs-primary", [], ["action", "login", "label", "Login", "loadingTxt", "Logging In..", "isLoading", ["subexpr", "@mut", [["get", "isLoading", ["loc", [null, [154, 94], [154, 103]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [154, 16], [154, 105]]], 0, 0], ["block", "infinite-scroll", [], ["content", ["subexpr", "@mut", [["get", "content", ["loc", [null, [160, 27], [160, 34]]], 0, 0, 0, 0]], [], [], 0, 0], "hasMore", ["subexpr", "@mut", [["get", "hasMore", ["loc", [null, [160, 43], [160, 50]]], 0, 0, 0, 0]], [], [], 0, 0], "scrollable", ".innerContainer"], 9, null, ["loc", [null, [160, 0], [162, 20]]]], ["content", "hostip", ["loc", [null, [168, 23], [168, 33]]], 0, 0, 0, 0], ["element", "action", ["refresh", ["get", "hostip", ["loc", [null, [170, 32], [170, 38]]], 0, 0, 0, 0]], [], ["loc", [null, [170, 13], [170, 40]]], 0, 0], ["element", "action", ["closePopup"], [], ["loc", [null, [172, 21], [172, 44]]], 0, 0], ["content", "configdetail", ["loc", [null, [176, 3], [176, 19]]], 0, 0, 0, 0]],
       locals: [],
       templates: [child0, child1, child2, child3, child4, child5, child6, child7, child8, child9]
     };
@@ -79027,22 +79914,22 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element4 = dom.childAt(fragment, [1]);
-          var element5 = dom.childAt(element4, [17]);
-          var element6 = dom.childAt(element5, [3]);
-          var element7 = dom.childAt(element5, [5]);
+          var element6 = dom.childAt(fragment, [1]);
+          var element7 = dom.childAt(element6, [17]);
+          var element8 = dom.childAt(element7, [3]);
+          var element9 = dom.childAt(element7, [5]);
           var morphs = new Array(11);
-          morphs[0] = dom.createAttrMorph(element4, 'ids');
-          morphs[1] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
-          morphs[2] = dom.createMorphAt(dom.childAt(element4, [3]), 0, 0);
-          morphs[3] = dom.createMorphAt(dom.childAt(element4, [6]), 0, 0);
-          morphs[4] = dom.createMorphAt(dom.childAt(element4, [9]), 0, 0);
-          morphs[5] = dom.createMorphAt(dom.childAt(element4, [11]), 0, 0);
-          morphs[6] = dom.createMorphAt(dom.childAt(element4, [13]), 0, 0);
-          morphs[7] = dom.createMorphAt(dom.childAt(element4, [15]), 0, 0);
-          morphs[8] = dom.createMorphAt(element5, 1, 1);
-          morphs[9] = dom.createElementMorph(element6);
-          morphs[10] = dom.createElementMorph(element7);
+          morphs[0] = dom.createAttrMorph(element6, 'ids');
+          morphs[1] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element6, [3]), 0, 0);
+          morphs[3] = dom.createMorphAt(dom.childAt(element6, [6]), 0, 0);
+          morphs[4] = dom.createMorphAt(dom.childAt(element6, [9]), 0, 0);
+          morphs[5] = dom.createMorphAt(dom.childAt(element6, [11]), 0, 0);
+          morphs[6] = dom.createMorphAt(dom.childAt(element6, [13]), 0, 0);
+          morphs[7] = dom.createMorphAt(dom.childAt(element6, [15]), 0, 0);
+          morphs[8] = dom.createMorphAt(element7, 1, 1);
+          morphs[9] = dom.createElementMorph(element8);
+          morphs[10] = dom.createElementMorph(element9);
           return morphs;
         },
         statements: [["attribute", "ids", ["concat", [["get", "item.request_id", ["loc", [null, [42, 27], [42, 42]]], 0, 0, 0, 0]], 0, 0, 0, 0, 0], 0, 0, 0, 0], ["content", "item.request_id", ["loc", [null, [43, 24], [43, 43]]], 0, 0, 0, 0], ["content", "item.requester_username", ["loc", [null, [44, 31], [44, 58]]], 0, 0, 0, 0], ["inline", "commitlogmap", [["get", "item.command_category", ["loc", [null, [46, 39], [46, 60]]], 0, 0, 0, 0]], [], ["loc", [null, [46, 24], [46, 63]]], 0, 0], ["content", "item.entity_name", ["loc", [null, [48, 24], [48, 44]]], 0, 0, 0, 0], ["content", "item.config_comment", ["loc", [null, [49, 24], [49, 47]]], 0, 0, 0, 0], ["content", "item.approver", ["loc", [null, [50, 31], [50, 48]]], 0, 0, 0, 0], ["inline", "formate-date", [["get", "item.created", ["loc", [null, [51, 46], [51, 58]]], 0, 0, 0, 0], "YYYY-MM-DD HH:mm:ss"], [], ["loc", [null, [51, 31], [51, 82]]], 0, 0], ["block", "if", [["subexpr", "eq", [["get", "item.approve_status", ["loc", [null, [53, 34], [53, 53]]], 0, 0, 0, 0], 0], [], ["loc", [null, [53, 30], [53, 56]]], 0, 0]], [], 0, 1, ["loc", [null, [53, 24], [59, 31]]]], ["element", "action", ["viewRouterDetail", ["get", "item", ["loc", [null, [60, 95], [60, 99]]], 0, 0, 0, 0]], [], ["loc", [null, [60, 67], [60, 101]]], 0, 0], ["element", "action", ["showComments", ["get", "item", ["loc", [null, [62, 84], [62, 88]]], 0, 0, 0, 0]], [], ["loc", [null, [62, 60], [62, 90]]], 0, 0]],
@@ -79090,9 +79977,9 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element3 = dom.childAt(fragment, [1]);
+              var element5 = dom.childAt(fragment, [1]);
               var morphs = new Array(1);
-              morphs[0] = dom.createElementMorph(element3);
+              morphs[0] = dom.createElementMorph(element5);
               return morphs;
             },
             statements: [["element", "action", ["executeWorkflow"], [], ["loc", [null, [79, 59], [79, 87]]], 0, 0]],
@@ -79226,11 +80113,11 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element1 = dom.childAt(fragment, [1]);
-              var element2 = dom.childAt(fragment, [3]);
+              var element3 = dom.childAt(fragment, [1]);
+              var element4 = dom.childAt(fragment, [3]);
               var morphs = new Array(2);
-              morphs[0] = dom.createElementMorph(element1);
-              morphs[1] = dom.createElementMorph(element2);
+              morphs[0] = dom.createElementMorph(element3);
+              morphs[1] = dom.createElementMorph(element4);
               return morphs;
             },
             statements: [["element", "action", ["updateWorkStat", "1"], [], ["loc", [null, [84, 55], [84, 86]]], 0, 0], ["element", "action", ["updateWorkStat", "2"], [], ["loc", [null, [85, 52], [85, 83]]], 0, 0]],
@@ -79316,9 +80203,9 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
                 return el0;
               },
               buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                var element0 = dom.childAt(fragment, [1]);
+                var element2 = dom.childAt(fragment, [1]);
                 var morphs = new Array(1);
-                morphs[0] = dom.createElementMorph(element0);
+                morphs[0] = dom.createElementMorph(element2);
                 return morphs;
               },
               statements: [["element", "action", ["executeWorkflow"], [], ["loc", [null, [89, 59], [89, 87]]], 0, 0]],
@@ -79588,7 +80475,7 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
               "column": 16
             },
             "end": {
-              "line": 109,
+              "line": 110,
               "column": 16
             }
           },
@@ -79600,11 +80487,22 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("                    ");
+          var el1 = dom.createTextNode("                     ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("span");
           dom.setAttribute(el1, "class", "workflow-rtxt");
           var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode(" ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("a");
+          dom.setAttribute(el2, "style", "cursor: pointer;");
+          var el3 = dom.createTextNode("[");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("]");
+          dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
@@ -79612,11 +80510,15 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
+          var element0 = dom.childAt(fragment, [1]);
+          var element1 = dom.childAt(element0, [2]);
+          var morphs = new Array(3);
+          morphs[0] = dom.createMorphAt(element0, 0, 0);
+          morphs[1] = dom.createElementMorph(element1);
+          morphs[2] = dom.createMorphAt(element1, 1, 1);
           return morphs;
         },
-        statements: [["content", "item", ["loc", [null, [108, 48], [108, 56]]], 0, 0, 0, 0]],
+        statements: [["content", "item.hostname", ["loc", [null, [109, 49], [109, 66]]], 0, 0, 0, 0], ["element", "action", ["getConfig", ["get", "item.host", ["loc", [null, [109, 97], [109, 106]]], 0, 0, 0, 0]], [], ["loc", [null, [109, 75], [109, 109]]], 0, 0], ["content", "item.host", ["loc", [null, [109, 136], [109, 149]]], 0, 0, 0, 0]],
         locals: ["item"],
         templates: []
       };
@@ -79628,11 +80530,11 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 115,
+              "line": 116,
               "column": 24
             },
             "end": {
-              "line": 117,
+              "line": 118,
               "column": 24
             }
           },
@@ -79659,7 +80561,7 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
           return morphs;
         },
-        statements: [["content", "item", ["loc", [null, [116, 32], [116, 40]]], 0, 0, 0, 0]],
+        statements: [["content", "item", ["loc", [null, [117, 32], [117, 40]]], 0, 0, 0, 0]],
         locals: ["item"],
         templates: []
       };
@@ -79672,11 +80574,11 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 123,
+                "line": 124,
                 "column": 28
               },
               "end": {
-                "line": 125,
+                "line": 126,
                 "column": 28
               }
             },
@@ -79703,7 +80605,7 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
             morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
             return morphs;
           },
-          statements: [["content", "col", ["loc", [null, [124, 36], [124, 43]]], 0, 0, 0, 0]],
+          statements: [["content", "col", ["loc", [null, [125, 36], [125, 43]]], 0, 0, 0, 0]],
           locals: ["col"],
           templates: []
         };
@@ -79714,11 +80616,11 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 121,
+              "line": 122,
               "column": 20
             },
             "end": {
-              "line": 127,
+              "line": 128,
               "column": 20
             }
           },
@@ -79749,7 +80651,7 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           return morphs;
         },
-        statements: [["block", "each", [["get", "item", ["loc", [null, [123, 36], [123, 40]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [123, 28], [125, 37]]]]],
+        statements: [["block", "each", [["get", "item", ["loc", [null, [124, 36], [124, 40]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [124, 28], [126, 37]]]]],
         locals: ["item"],
         templates: [child0]
       };
@@ -79761,11 +80663,11 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 159,
+              "line": 160,
               "column": 0
             },
             "end": {
-              "line": 161,
+              "line": 162,
               "column": 0
             }
           },
@@ -79790,7 +80692,7 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           return morphs;
         },
-        statements: [["content", "loading-page-scroll", ["loc", [null, [160, 4], [160, 27]]], 0, 0, 0, 0]],
+        statements: [["content", "loading-page-scroll", ["loc", [null, [161, 4], [161, 27]]], 0, 0, 0, 0]],
         locals: [],
         templates: []
       };
@@ -79805,8 +80707,8 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 162,
-            "column": 0
+            "line": 180,
+            "column": 6
           }
         },
         "moduleName": "netconfig/templates/workflow.hbs"
@@ -80218,33 +81120,107 @@ define("netconfig/templates/workflow", ["exports"], function (exports) {
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "id", "popup1");
+        dom.setAttribute(el1, "class", "overlay2");
+        var el2 = dom.createTextNode("\n	");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "popup");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "title2");
+        var el4 = dom.createTextNode("\n		");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("h2");
+        var el5 = dom.createTextNode("Configuration of ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("span");
+        dom.setAttribute(el4, "class", "conf-refresh");
+        var el5 = dom.createTextNode("\n          ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fa fa-refresh");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n		  ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("a");
+        dom.setAttribute(el4, "class", "close");
+        var el5 = dom.createTextNode("×");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n	");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "content2");
+        dom.setAttribute(el3, "pre-line", "");
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("pre");
+        var el5 = dom.createTextNode("\n			");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n		");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n	");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element8 = dom.childAt(fragment, [0, 1]);
-        var element9 = dom.childAt(fragment, [2]);
-        var element10 = dom.childAt(element9, [5]);
-        var element11 = dom.childAt(element10, [3]);
-        var element12 = dom.childAt(element11, [9]);
-        var element13 = dom.childAt(element9, [7, 1]);
-        var element14 = dom.childAt(element13, [1, 1]);
-        var morphs = new Array(12);
-        morphs[0] = dom.createMorphAt(dom.childAt(element8, [4]), 3, 3);
-        morphs[1] = dom.createMorphAt(dom.childAt(element8, [6]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element9, [1, 3]), 1, 1);
-        morphs[3] = dom.createMorphAt(dom.childAt(element9, [3, 3]), 0, 0);
-        morphs[4] = dom.createMorphAt(dom.childAt(element10, [1, 3]), 1, 1);
-        morphs[5] = dom.createMorphAt(element11, 1, 1);
-        morphs[6] = dom.createMorphAt(dom.childAt(element11, [5]), 1, 1);
-        morphs[7] = dom.createMorphAt(dom.childAt(element12, [1, 1]), 1, 1);
-        morphs[8] = dom.createMorphAt(dom.childAt(element12, [3]), 1, 1);
-        morphs[9] = dom.createElementMorph(element14);
-        morphs[10] = dom.createMorphAt(dom.childAt(element13, [3, 7]), 1, 1);
+        var element10 = dom.childAt(fragment, [0, 1]);
+        var element11 = dom.childAt(fragment, [2]);
+        var element12 = dom.childAt(element11, [5]);
+        var element13 = dom.childAt(element12, [3]);
+        var element14 = dom.childAt(element13, [9]);
+        var element15 = dom.childAt(element11, [7, 1]);
+        var element16 = dom.childAt(element15, [1, 1]);
+        var element17 = dom.childAt(fragment, [6, 1]);
+        var element18 = dom.childAt(element17, [1]);
+        var element19 = dom.childAt(element18, [3, 1]);
+        var element20 = dom.childAt(element18, [5]);
+        var morphs = new Array(16);
+        morphs[0] = dom.createMorphAt(dom.childAt(element10, [4]), 3, 3);
+        morphs[1] = dom.createMorphAt(dom.childAt(element10, [6]), 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element11, [1, 3]), 1, 1);
+        morphs[3] = dom.createMorphAt(dom.childAt(element11, [3, 3]), 0, 0);
+        morphs[4] = dom.createMorphAt(dom.childAt(element12, [1, 3]), 1, 1);
+        morphs[5] = dom.createMorphAt(element13, 1, 1);
+        morphs[6] = dom.createMorphAt(dom.childAt(element13, [5]), 1, 1);
+        morphs[7] = dom.createMorphAt(dom.childAt(element14, [1, 1]), 1, 1);
+        morphs[8] = dom.createMorphAt(dom.childAt(element14, [3]), 1, 1);
+        morphs[9] = dom.createElementMorph(element16);
+        morphs[10] = dom.createMorphAt(dom.childAt(element15, [3, 7]), 1, 1);
         morphs[11] = dom.createMorphAt(fragment, 4, 4, contextualElement);
-        dom.insertBoundary(fragment, null);
+        morphs[12] = dom.createMorphAt(dom.childAt(element18, [1]), 1, 1);
+        morphs[13] = dom.createElementMorph(element19);
+        morphs[14] = dom.createElementMorph(element20);
+        morphs[15] = dom.createMorphAt(dom.childAt(element17, [3, 1]), 1, 1);
         return morphs;
       },
-      statements: [["block", "ember-chosen", [], ["name", "date", "action", "updateFilter", "placeholder", "Select Date"], 0, null, ["loc", [null, [7, 12], [12, 29]]]], ["block", "ember-chosen", [], ["name", "status", "action", "updateFilter", "placeholder", "Select Date"], 1, null, ["loc", [null, [16, 12], [21, 29]]]], ["block", "each", [["get", "content", ["loc", [null, [41, 20], [41, 27]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [41, 12], [65, 21]]]], ["content", "approver_comment", ["loc", [null, [70, 39], [70, 59]]], 0, 0, 0, 0], ["block", "if", [["get", "isAdmin", ["loc", [null, [76, 22], [76, 29]]], 0, 0, 0, 0]], [], 3, 4, ["loc", [null, [76, 16], [91, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "routerData.approve_status", ["loc", [null, [95, 22], [95, 47]]], 0, 0, 0, 0], 0], [], ["loc", [null, [95, 18], [95, 50]]], 0, 0]], [], 5, null, ["loc", [null, [95, 12], [104, 19]]]], ["block", "each", [["get", "routerData.routers", ["loc", [null, [107, 24], [107, 42]]], 0, 0, 0, 0]], [], 6, null, ["loc", [null, [107, 16], [109, 25]]]], ["block", "each", [["get", "routerData.acttbl.hdr", ["loc", [null, [115, 32], [115, 53]]], 0, 0, 0, 0]], [], 7, null, ["loc", [null, [115, 24], [117, 33]]]], ["block", "each", [["get", "routerData.acttbl.body", ["loc", [null, [121, 28], [121, 50]]], 0, 0, 0, 0]], [], 8, null, ["loc", [null, [121, 20], [127, 29]]]], ["element", "action", ["close_popup"], [], ["loc", [null, [135, 32], [135, 56]]], 0, 0], ["inline", "bs-primary", [], ["action", "login", "label", "Login", "loadingTxt", "Logging In..", "isLoading", ["subexpr", "@mut", [["get", "isLoading", ["loc", [null, [153, 94], [153, 103]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [153, 16], [153, 105]]], 0, 0], ["block", "infinite-scroll", [], ["content", ["subexpr", "@mut", [["get", "content", ["loc", [null, [159, 27], [159, 34]]], 0, 0, 0, 0]], [], [], 0, 0], "hasMore", ["subexpr", "@mut", [["get", "hasMore", ["loc", [null, [159, 43], [159, 50]]], 0, 0, 0, 0]], [], [], 0, 0], "scrollable", ".innerContainer"], 9, null, ["loc", [null, [159, 0], [161, 20]]]]],
+      statements: [["block", "ember-chosen", [], ["name", "date", "action", "updateFilter", "placeholder", "Select Date"], 0, null, ["loc", [null, [7, 12], [12, 29]]]], ["block", "ember-chosen", [], ["name", "status", "action", "updateFilter", "placeholder", "Select Date"], 1, null, ["loc", [null, [16, 12], [21, 29]]]], ["block", "each", [["get", "content", ["loc", [null, [41, 20], [41, 27]]], 0, 0, 0, 0]], [], 2, null, ["loc", [null, [41, 12], [65, 21]]]], ["content", "approver_comment", ["loc", [null, [70, 39], [70, 59]]], 0, 0, 0, 0], ["block", "if", [["get", "isAdmin", ["loc", [null, [76, 22], [76, 29]]], 0, 0, 0, 0]], [], 3, 4, ["loc", [null, [76, 16], [91, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "routerData.approve_status", ["loc", [null, [95, 22], [95, 47]]], 0, 0, 0, 0], 0], [], ["loc", [null, [95, 18], [95, 50]]], 0, 0]], [], 5, null, ["loc", [null, [95, 12], [104, 19]]]], ["block", "each", [["get", "parseData", ["loc", [null, [107, 24], [107, 33]]], 0, 0, 0, 0]], [], 6, null, ["loc", [null, [107, 16], [110, 25]]]], ["block", "each", [["get", "routerData.acttbl.hdr", ["loc", [null, [116, 32], [116, 53]]], 0, 0, 0, 0]], [], 7, null, ["loc", [null, [116, 24], [118, 33]]]], ["block", "each", [["get", "routerData.acttbl.body", ["loc", [null, [122, 28], [122, 50]]], 0, 0, 0, 0]], [], 8, null, ["loc", [null, [122, 20], [128, 29]]]], ["element", "action", ["close_popup"], [], ["loc", [null, [136, 32], [136, 56]]], 0, 0], ["inline", "bs-primary", [], ["action", "login", "label", "Login", "loadingTxt", "Logging In..", "isLoading", ["subexpr", "@mut", [["get", "isLoading", ["loc", [null, [154, 94], [154, 103]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [154, 16], [154, 105]]], 0, 0], ["block", "infinite-scroll", [], ["content", ["subexpr", "@mut", [["get", "content", ["loc", [null, [160, 27], [160, 34]]], 0, 0, 0, 0]], [], [], 0, 0], "hasMore", ["subexpr", "@mut", [["get", "hasMore", ["loc", [null, [160, 43], [160, 50]]], 0, 0, 0, 0]], [], [], 0, 0], "scrollable", ".innerContainer"], 9, null, ["loc", [null, [160, 0], [162, 20]]]], ["content", "hostip", ["loc", [null, [168, 23], [168, 33]]], 0, 0, 0, 0], ["element", "action", ["refresh", ["get", "hostip", ["loc", [null, [170, 32], [170, 38]]], 0, 0, 0, 0]], [], ["loc", [null, [170, 13], [170, 40]]], 0, 0], ["element", "action", ["closePopup"], [], ["loc", [null, [172, 21], [172, 44]]], 0, 0], ["content", "configdetail", ["loc", [null, [176, 3], [176, 19]]], 0, 0, 0, 0]],
       locals: [],
       templates: [child0, child1, child2, child3, child4, child5, child6, child7, child8, child9]
     };
@@ -81278,8 +82254,9 @@ define('netconfig/utils/validation', ['exports', 'netconfig/utils/notify', 'jque
       return val;
     },
 
-    validateRuleList: function validateRuleList(key) {
+    validateRuleList: function validateRuleList(key, iptype) {
 
+      var ipv6 = /^([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])/;
       var ipsubnet = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(3[0-2]|[1-2]?[0-9])$/;
       //var portRegex = /^\d{1,5}$/;
       var numberRegex = /^[A-Za-z]+$/;
@@ -81327,185 +82304,211 @@ define('netconfig/utils/validation', ['exports', 'netconfig/utils/notify', 'jque
 
       formgrp.each(function (i, e) {
 
-        console.log((0, _jquery['default'])(e).find('.formRow'));
-
         (0, _jquery['default'])(e).find('.formRow').each(function () {
 
-        var label = (0, _jquery['default'])(this).find('.key-box').text();
-        var input = (0, _jquery['default'])(this).find('.value-box').val();
-        var temp = (0, _jquery['default'])(this).find('.value-box');
+          var label = (0, _jquery['default'])(this).find('.key-box').text();
+          var input = (0, _jquery['default'])(this).find('.value-box').val();
+          var temp = (0, _jquery['default'])(this).find('.value-box');
 
-        var ele = (0, _jquery['default'])(this).find('.key-box').parent();
+          var ele = (0, _jquery['default'])(this).find('.key-box').parent();
 
-        //console.log("label is",label)
-        //console.log("value is",input)
+          //console.log("label is",label)
+          //console.log("value is",input)
 
-        if (label == 'State') {
-          if (input && !validateState(input)) {
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            // customNotify('error', 'Invalid State');
-            isValid = false;
-            return false;
-          }
-        }
-
-        if (label === "Action") {
-          if (input === '') {
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', 'Action is mandatory');
-            isValid = false;
-            return false;
-          }
-        }
-
-        if (label === "Protocol") {
-          if (input && !numberRegex.test(input)) {
-            console.log("inside protcol!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-
-            (0, _netconfigUtilsNotify.customNotify)('error', 'protocol is a text field, should not contain numbers');
-            isValid = false;
-            return false;
-          }
-        }
-
-        if (label === "Source Host") {
-          if (input && !(frmRegex.ipaddress.test(input) || ipsubnet.test(input))) {
-            console.log("source host!!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', 'Invalid source IP Address');
-            isValid = false;
-            return false;
-          }
-        }
-
-        if (label === "Destination Host") {
-          if (input && !(frmRegex.ipaddress.test(input) || ipsubnet.test(input))) {
-            console.log("destination host!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', 'Invalid desaination IP Address');
-            isValid = false;
-            return false;
-          }
-        }
-
-        if (label === "Source Port") {
-          if (input && !validatePortNumbers(input)) {
-            console.log("source port!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            //customNotify('error', 'Invalid source Port Number');
-            isValid = false;
-            return false;
+          if (label == 'State') {
+            if (input && !validateState(input)) {
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              // customNotify('error', 'Invalid State');
+              isValid = false;
+              return false;
+            }
           }
 
-          var prot = (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').val();
-
-          if (input && prot === '') {
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"]').parent().offset().top
-            }, 2000);
-            (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', 'Port Number should always be accompanied with a protocol');
-            isValid = false;
-            return false;
-          }
-        }
-
-        if (label === "Destination Port") {
-          if (input && !validatePortNumbers(input)) {
-            console.log("destination port!!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            //customNotify('error', 'Invalid Destination Port Number');
-            isValid = false;
-            return false;
+          if (label === "Action") {
+            if (input === '') {
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              (0, _netconfigUtilsNotify.customNotify)('error', 'Action is mandatory');
+              isValid = false;
+              return false;
+            }
           }
 
-          var prot = (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').val();
+          if (label === "Protocol") {
+            if (input && !numberRegex.test(input)) {
+              console.log("inside protcol!!!!!!!!!");
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
 
-          if (input && prot === '') {
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"]').parent().offset().top
-            }, 2000);
-            (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', 'Port Number should always be accompanied with a protocol');
-            isValid = false;
-            return false;
+              (0, _netconfigUtilsNotify.customNotify)('error', 'protocol is a text field, should not contain numbers');
+              isValid = false;
+              return false;
+            }
           }
-        }
 
-        if (label === "Interface") {
-          if (input && !alphanumericRegex.test(input)) {
-            console.log("inside interface!!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', ' interface should contain letters and numbers');
-            isValid = false;
-            return false;
-          }
-        }
+          if (label === "Source Host") {
 
-        if (label === "Outgoing Interface") {
-          if (input && !alphanumericRegex.test(input)) {
-            console.log("inside interface!!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', ' interface should contain letters and numbers');
-            isValid = false;
-            return false;
-          }
-        }
+            if (iptype) {
 
-        if (label === "Incoming Interface") {
-          if (input && !alphanumericRegex.test(input)) {
-            console.log("inside interface!!!!!!!!!!");
-            (0, _jquery['default'])('.innerContainer').animate({
-              scrollTo: (0, _jquery['default'])(ele).offset().top
-            }, 2000);
-            (0, _jquery['default'])(temp).focus();
-            (0, _netconfigUtilsNotify.customNotify)('error', ' interface should contain letters and numbers');
-            isValid = false;
-            return false;
+              if (input && !(frmRegex.ipaddress.test(input) || ipsubnet.test(input))) {
+                console.log("source host!!!!!!!!!!");
+                (0, _jquery['default'])('.innerContainer').animate({
+                  scrollTo: (0, _jquery['default'])(ele).offset().top
+                }, 2000);
+                (0, _jquery['default'])(temp).focus();
+                (0, _netconfigUtilsNotify.customNotify)('error', 'Invalid source IP Address');
+                isValid = false;
+                return false;
+              }
+            } else {
+              if (input && !ipv6.test(input)) {
+                console.log("source host!!!!!!!!!!");
+                (0, _jquery['default'])('.innerContainer').animate({
+                  scrollTo: (0, _jquery['default'])(ele).offset().top
+                }, 2000);
+                (0, _jquery['default'])(temp).focus();
+                (0, _netconfigUtilsNotify.customNotify)('error', 'Invalid source IP Address');
+                isValid = false;
+                return false;
+              }
+            }
           }
-        }
+
+          if (label === "Destination Host") {
+
+            if (iptype) {
+              if (input && !(frmRegex.ipaddress.test(input) || ipsubnet.test(input))) {
+                (0, _jquery['default'])('.innerContainer').animate({
+                  scrollTo: (0, _jquery['default'])(ele).offset().top
+                }, 2000);
+                (0, _jquery['default'])(temp).focus();
+                (0, _netconfigUtilsNotify.customNotify)('error', 'Invalid desaination IP Address');
+                isValid = false;
+                return false;
+              }
+            } else {
+              if (input && !ipv6.test(input)) {
+
+                (0, _jquery['default'])('.innerContainer').animate({
+                  scrollTo: (0, _jquery['default'])(ele).offset().top
+                }, 2000);
+                (0, _jquery['default'])(temp).focus();
+                (0, _netconfigUtilsNotify.customNotify)('error', 'Invalid desaination IP Address');
+                isValid = false;
+                return false;
+              }
+            }
+          }
+
+          if (label === "Source Port") {
+            if (input && !validatePortNumbers(input)) {
+              console.log("source port!!!!!!!!");
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              //customNotify('error', 'Invalid source Port Number');
+              isValid = false;
+              return false;
+            }
+
+            var prot = (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').val();
+
+            if (input && prot === '') {
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"]').parent().offset().top
+              }, 2000);
+              (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').focus();
+              (0, _netconfigUtilsNotify.customNotify)('error', 'Port Number should always be accompanied with a protocol');
+              isValid = false;
+              return false;
+            }
+          }
+
+          if (label === "Destination Port") {
+            if (input && !validatePortNumbers(input)) {
+              console.log("destination port!!!!!!!!!!");
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              //customNotify('error', 'Invalid Destination Port Number');
+              isValid = false;
+              return false;
+            }
+
+            var prot = (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').val();
+
+            if (input && prot === '') {
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"]').parent().offset().top
+              }, 2000);
+              (0, _jquery['default'])(e).find('.formRow label[data-val="protocol"] + input').focus();
+              (0, _netconfigUtilsNotify.customNotify)('error', 'Port Number should always be accompanied with a protocol');
+              isValid = false;
+              return false;
+            }
+          }
+
+          if (label === "Interface") {
+            if (input && !alphanumericRegex.test(input)) {
+              console.log("inside interface!!!!!!!!!!");
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              (0, _netconfigUtilsNotify.customNotify)('error', ' interface should contain letters and numbers');
+              isValid = false;
+              return false;
+            }
+          }
+
+          if (label === "Outgoing Interface") {
+            if (input && !alphanumericRegex.test(input)) {
+              console.log("inside interface!!!!!!!!!!");
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              (0, _netconfigUtilsNotify.customNotify)('error', ' interface should contain letters and numbers');
+              isValid = false;
+              return false;
+            }
+          }
+
+          if (label === "Incoming Interface") {
+            if (input && !alphanumericRegex.test(input)) {
+              console.log("inside interface!!!!!!!!!!");
+              (0, _jquery['default'])('.innerContainer').animate({
+                scrollTo: (0, _jquery['default'])(ele).offset().top
+              }, 2000);
+              (0, _jquery['default'])(temp).focus();
+              (0, _netconfigUtilsNotify.customNotify)('error', ' interface should contain letters and numbers');
+              isValid = false;
+              return false;
+            }
+          }
+        });
       });
-});
-
       return isValid;
-}
-};
+    }
 
-exports.frmRegex = frmRegex;
-exports.rangeRegex = rangeRegex;
-exports.customConfirm = customConfirm;
-exports.isEmpty = isEmpty;
-exports.customAlert = customAlert;
-exports.validateForm = validateForm;
-exports.formdatatoObj = formdatatoObj;
+  };
+
+  exports.frmRegex = frmRegex;
+  exports.rangeRegex = rangeRegex;
+  exports.customConfirm = customConfirm;
+  exports.isEmpty = isEmpty;
+  exports.customAlert = customAlert;
+  exports.validateForm = validateForm;
+  exports.formdatatoObj = formdatatoObj;
 });
 /*$Id$*/
 define('netconfig/views/application', ['exports', 'ember'], function (exports, _ember) {
@@ -81690,7 +82693,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("netconfig/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_VIEW_LOOKUPS":true,"name":"netconfig","version":"0.0.0+f06cfe68"});
+  require("netconfig/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_VIEW_LOOKUPS":true,"name":"netconfig","version":"0.0.0+02b7e1d8"});
 }
 
 /* jshint ignore:end */
